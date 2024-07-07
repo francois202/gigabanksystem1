@@ -3,6 +3,7 @@ package gigabank.accountmanagement.entity;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,5 +14,5 @@ public class BankAccount {
     private String id;
     private BigDecimal balance;
     private User owner;
-    private List<Transaction> transactions;
+    private List<Transaction> transactions = new ArrayList<>();
 }
