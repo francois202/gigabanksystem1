@@ -253,7 +253,7 @@ public class AnalyticsService {
             toAccount.setBalance(toAccount.getBalance().add(sum));
 
             Transaction transactionFrom = new Transaction("1", sum, TRANSFER, "Transfer", LocalDateTime.now());
-            Transaction transactionTo = new Transaction("1", sum, TRANSFER, "Transfer", LocalDateTime.now());
+            Transaction transactionTo = new Transaction("2", sum, TRANSFER, "Transfer", LocalDateTime.now());
 
             fromAccount.getTransactions().add(transactionFrom);
             toAccount.getTransactions().add(transactionTo);
