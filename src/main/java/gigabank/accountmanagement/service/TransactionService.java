@@ -11,5 +11,7 @@ public class TransactionService {
     public static Set<String> transactionCategories = Set.of(
             "Health", "Beauty", "Education");
 
-
+    public Boolean isValidCategory(String category) {
+        return transactionCategories.contains(category);
+    }
 }

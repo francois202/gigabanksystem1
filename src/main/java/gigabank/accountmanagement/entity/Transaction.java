@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.ToString;
@@ -12,17 +13,12 @@ import java.util.Comparator;
  * Информация о совершенной банковской транзакции
  */
 @Data
+@AllArgsConstructor
 public class Transaction{
-    @NonNull
     private String id;
-    @NonNull
     private BigDecimal value;
-    @NonNull
     private TransactionType type;
-    @NonNull
     private String category;
-    @NonNull
-    private BankAccount bankAccount;
-    @NonNull
+//    private BankAccount bankAccount;
     private LocalDateTime createdDate;
 }

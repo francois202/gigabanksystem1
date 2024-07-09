@@ -5,20 +5,16 @@ import lombok.NonNull;
 import lombok.ToString;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Информация о банковском счете пользователя
  */
 @Data
-@ToString(of = {"id", "balance"})
 public class BankAccount {
-    @NonNull
     private String id;
-    @NonNull
-    private BigDecimal balance;
-    @NonNull
+    private BigDecimal balance = BigDecimal.ZERO;
     private User owner;
-    @NonNull
-    private List<Transaction> transactions;
+    private List<Transaction> transactions = new ArrayList<>();
 }

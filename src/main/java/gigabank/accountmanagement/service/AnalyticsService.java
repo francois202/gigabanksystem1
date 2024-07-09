@@ -2,6 +2,7 @@ package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import org.w3c.dom.ls.LSOutput;
 
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static gigabank.accountmanagement.entity.TransactionType.*;
 
@@ -16,9 +18,9 @@ import static gigabank.accountmanagement.entity.TransactionType.*;
  * Сервис предоставляет аналитику по операциям пользователей
  */
 public class AnalyticsService {
-    private LocalDateTime now = LocalDateTime.now();
-    private LocalDateTime minusMonth = now.minus(1L, ChronoUnit.MONTHS);
-    private Random random = new Random();
+    private LocalDateTime minusMonth = LocalDateTime.now().minus(1L, ChronoUnit.MONTHS);
+
+    private TransactionService transactionService = new TransactionService();
 
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
@@ -29,18 +31,20 @@ public class AnalyticsService {
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         BigDecimal sum = BigDecimal.ZERO;
 
-        if (bankAccount == null) {
+        if (bankAccount == null || !transactionService.isValidCategory(category)) {
             return BigDecimal.ZERO;
         }
 
         for (Transaction transaction : bankAccount.getTransactions()) {
 
             if (transaction.getCategory() != category) {
-                return BigDecimal.ZERO;
+                continue;
             }
 
-            if (transaction.getCategory() == category && transaction.getType() == PAYMENT
-                && transaction.getCreatedDate().isAfter(minusMonth) && transaction.getCreatedDate().isBefore(now)) {
+            if (transaction.getCategory().equals(category)
+                && transaction.getType().equals(PAYMENT)
+                && transaction.getCreatedDate().isAfter(minusMonth)) {
+
                 sum = sum.add(transaction.getValue());
             }
         }
@@ -70,8 +74,7 @@ public class AnalyticsService {
         for (BankAccount bankAccount : user.getBankAccounts()) {
             for (Transaction transaction : bankAccount.getTransactions()) {
                 if (transaction.getType() == PAYMENT &&
-                    transaction.getCreatedDate().isAfter(minusMonth) &&
-                    transaction.getCreatedDate().isBefore(now)) {
+                    transaction.getCreatedDate().isAfter(minusMonth)) {
 
                     String category = transaction.getCategory();
 
@@ -81,10 +84,10 @@ public class AnalyticsService {
 
                         categorySum.put(category, updateSum);
                     } else {
-                        return new HashMap<>();
+                        continue;
                     }
                 } else {
-                    return new HashMap<>();
+                    continue;
                 }
             }
         }
@@ -98,33 +101,26 @@ public class AnalyticsService {
      * @param user - пользователь
      * @return мапа категория - все операции совершенные по ней
      */
-    public TreeMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
-
-        TreeMap<String, List<Transaction>> result = new TreeMap<>();
+    public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
+        LinkedHashMap<String, List<Transaction>> result = new LinkedHashMap<>();
         List<Transaction> transactionList = new ArrayList<>();
 
         if (user == null) {
-            return new TreeMap<>();
+            return result;
         }
 
         for (BankAccount bankAccount : user.getBankAccounts()) {
             for (Transaction transaction : bankAccount.getTransactions()) {
                 if (transaction.getType() == PAYMENT) {
                     transactionList.add(transaction);
-                    result.put(transaction.getCategory(), new ArrayList<>());
                 }
             }
         }
         transactionList.sort(Comparator.comparing(Transaction::getValue).reversed());
 
-        for (Map.Entry<String, List<Transaction>> entry : result.entrySet()) {
-            List<Transaction> value = entry.getValue();
-            String key = entry.getKey();
-            for (Transaction transaction : transactionList) {
-                if (key == transaction.getCategory()) {
-                    value.add(transaction);
-                }
-            }
+
+        for (Transaction transaction : transactionList) {
+            result.computeIfAbsent(transaction.getCategory(), key -> new ArrayList<>()).add(transaction);
         }
 
 
@@ -136,7 +132,7 @@ public class AnalyticsService {
         List<Transaction> transactionTime = new ArrayList<>();
 
         if (user == null) {
-            return new LinkedHashMap<>();
+            return result;
         }
 
         for (BankAccount bankAccount : user.getBankAccounts()) {
@@ -149,7 +145,7 @@ public class AnalyticsService {
                 Comparator.reverseOrder()));
 
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < Math.min(num, transactionTime.size()); i++) {
             result.put(transactionTime.get(i).getCreatedDate(), transactionTime.get(i));
         }
 
@@ -162,113 +158,108 @@ public class AnalyticsService {
                 Comparator.reverseOrder()));
         List<Transaction> transactionsList = new ArrayList<>();
 
-            for (BankAccount bankAccount : user.getBankAccounts()) {
-                for (Transaction transaction : bankAccount.getTransactions()) {
-                    if(!bankAccount.getTransactions().isEmpty() && bankAccount.getTransactions().size() >= num){
-                        if (transaction.getType() == PAYMENT) {
-                            transactionsList.add(transaction);
-                        }else{
-                            System.out.println("Incorrect transaction type");
-                        }
-                    }else{
-                        System.out.println("Нет транзакций за указанный период!");
+        if (user == null) {
+            return result;
+        }
+
+        for (BankAccount bankAccount : user.getBankAccounts()) {
+            for (Transaction transaction : bankAccount.getTransactions()) {
+                if (!bankAccount.getTransactions().isEmpty() && bankAccount.getTransactions().size() >= num) {
+                    if (transaction.getType() == PAYMENT) {
+                        transactionsList.add(transaction);
+                    } else {
+                        continue;
                     }
+                } else {
+                    return result;
                 }
             }
+        }
 
 
         transactionsList.sort(Comparator.comparing(Transaction::getValue).reversed());
 
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < Math.min(num, transactionsList.size()); i++) {
             result.add(transactionsList.get(i));
         }
+
 
         return result;
     }
 
-    private String createId() {
-        return String.valueOf(random.nextInt(500));
-    }
-
-    public void createNewBankAccountForUser(User user) {
-        BankAccount bankAccount = new BankAccount(createId(), BigDecimal.ZERO, user, new ArrayList<>());
-        if (bankAccount != null) {
+    public Boolean createNewBankAccountForUser(User user, BankAccount bankAccount) {
+        if (bankAccount != null && user != null) {
             user.getBankAccounts().add(bankAccount);
-            System.out.println("BankAccount was created");
-            System.out.println("New bank account: " + user.getBankAccounts());
+            return true;
         } else {
-            System.out.println("Incorrect data");
+            return false;
         }
     }
 
-    public void deleteUserBankAccount(User user, BankAccount bankAccount) {
-        if(user == null){
-            System.out.println("User not found");
+    public Boolean deleteUserBankAccount(User user, BankAccount bankAccount) {
+        if (user == null) {
+            return false;
         }
         if (user.getBankAccounts().contains(bankAccount)) {
             user.getBankAccounts().remove(bankAccount);
-            System.out.println("BankAccount " + bankAccount + " was deleted");
+            return true;
         } else {
-            System.out.println("Account not found");
+            throw new IllegalArgumentException("Bank account does not exist");
         }
     }
 
-    public void replenishmentBankAccount(BankAccount bankAccount, BigDecimal sum) {
+    public Boolean replenishmentBankAccount(BankAccount bankAccount, BigDecimal sum, Transaction transaction) {
+
+        if (bankAccount == null || transaction == null){
+            return false;
+        }
+
         BigDecimal balance = bankAccount.getBalance();
+
 
         if (sum.compareTo(BigDecimal.ZERO) > 0) {
             balance = balance.add(sum);
-            bankAccount.getTransactions().add(new Transaction(createId(), sum, DEPOSIT, "Replenishment",
-                    bankAccount, LocalDateTime.now()));
-            System.out.println("Balance: " + balance);
+            bankAccount.getTransactions().add(transaction);
+            return true;
         } else {
-            System.out.println("Incorrect sum");
+            return false;
         }
     }
 
-    public void paymentFromBankAccount(BankAccount bankAccount, Transaction transaction) {
+    public Boolean paymentFromBankAccount(BankAccount bankAccount, Transaction transaction) {
         List<Transaction> transactions = bankAccount.getTransactions();
 
-        if (transaction.getValue() == null) {
-            System.out.println("Incorrect value");
+        if (bankAccount == null || transactions == null) {
+            return false;
         }
 
         if (bankAccount.getBalance().compareTo(transaction.getValue()) >= 0) {
-            System.out.println("Account balance before: " + bankAccount.getBalance());
             bankAccount.setBalance(bankAccount.getBalance().subtract(transaction.getValue()));
-
             transactions.add(transaction);
-            System.out.println("Account balance after: " + bankAccount.getBalance());
+            return true;
         } else {
-            System.out.println("Insufficient funds in the account");
+            return false;
         }
     }
 
-    public void paymentFromAndToAccount(BankAccount fromAccount, BankAccount toAccount, BigDecimal sum) {
-        System.out.println("Start balance fromAccount: " + fromAccount.getBalance());
-        System.out.println("Start balance toAccount: " + toAccount.getBalance());
-        System.out.println();
+    public Boolean paymentFromAndToAccount(BankAccount fromAccount, BankAccount toAccount, BigDecimal sum) {
 
+        if(fromAccount == null || toAccount == null || sum.compareTo(BigDecimal.ZERO) < 0){
+            return false;
+        }
         if (fromAccount.getBalance().compareTo(sum) >= 0) {
             fromAccount.setBalance(fromAccount.getBalance().subtract(sum));
             toAccount.setBalance(toAccount.getBalance().add(sum));
 
-            Transaction transactionFrom = new Transaction(createId(), sum, TRANSFER, "Transfer",
-                    fromAccount, LocalDateTime.now());
-
-            Transaction transactionTo = new Transaction(createId(), sum, TRANSFER, "Transfer",
-                    toAccount, LocalDateTime.now());
+            Transaction transactionFrom = new Transaction("1", sum, TRANSFER, "Transfer", LocalDateTime.now());
+            Transaction transactionTo = new Transaction("1", sum, TRANSFER, "Transfer", LocalDateTime.now());
 
             fromAccount.getTransactions().add(transactionFrom);
             toAccount.getTransactions().add(transactionTo);
-
-            System.out.println("After balance fromAccount: " + fromAccount.getBalance());
-            System.out.println("After balance toAccount: " + toAccount.getBalance());
-            System.out.println();
-
-            System.out.println(fromAccount.getTransactions());
-            System.out.println(toAccount.getTransactions());
+            return true;
+        }else{
+            return false;
         }
     }
 }
