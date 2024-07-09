@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -145,5 +147,31 @@ public class AnalyticsServiceTest {
         user.getBankAccounts().add(bankAccount1);
         result = analyticsService.getTopNLargestTransactions(user, 2);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void analyze_performance() {
+
+        List<Transaction> transactions = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .collect(Collectors.toList());
+
+        long startTime = System.currentTimeMillis();
+        transactions.stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .count();
+        long endTime = System.currentTimeMillis();
+        System.out.println("Sequential stream time: " + (endTime - startTime) + " ms");
+
+        startTime = System.currentTimeMillis();
+        transactions.parallelStream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .count();
+        endTime = System.currentTimeMillis();
+        System.out.println("Parallel stream time: " + (endTime - startTime) + " ms");
     }
 }

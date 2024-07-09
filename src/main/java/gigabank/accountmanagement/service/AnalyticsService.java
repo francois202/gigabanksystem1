@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
@@ -32,13 +33,13 @@ public class AnalyticsService {
         }
 
         LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
-        for (Transaction transaction : bankAccount.getTransactions()) {
-            if (TransactionType.PAYMENT.equals(transaction.getType())
-                    && StringUtils.equals(transaction.getCategory(), category)
-                    && transaction.getCreatedDate().isAfter(oneMontAgo)) {
-                totalSum = totalSum.add(transaction.getValue());
-            }
-        }
+
+        totalSum = bankAccount.getTransactions().stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
+                        && StringUtils.equals(transaction.getCategory(), category)
+                        && transaction.getCreatedDate().isAfter(oneMontAgo))
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return totalSum;
     }
@@ -60,15 +61,13 @@ public class AnalyticsService {
 
         LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())
+        resultMap =  user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
                         && validCategories.contains(transaction.getCategory())
-                        && transaction.getCreatedDate().isAfter(oneMontAgo)) {
-                    resultMap.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
-                }
-            }
-        }
+                        && transaction.getCreatedDate().isAfter(oneMontAgo))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
 
         return resultMap;
     }
@@ -85,18 +84,11 @@ public class AnalyticsService {
             return resultMap;
         }
 
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())) {
-                    transactions.add(transaction);
-                }
-            }
-        }
-        transactions.sort(Comparator.comparing(Transaction::getValue));
-        for (Transaction transaction : transactions) {
-            resultMap.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-        }
+        resultMap = user.getBankAccounts().stream()
+                .flatMap(bankAccount ->bankAccount.getTransactions().stream())
+                .filter(transaction ->TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
 
         return resultMap;
     }
@@ -114,16 +106,12 @@ public class AnalyticsService {
             return lastTransactions;
         }
 
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            transactions.addAll(bankAccount.getTransactions());
-        }
+        lastTransactions = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
+                .limit(n)
+                .collect(Collectors.toList());
 
-        transactions.sort((t1, t2) -> t2.getCreatedDate().compareTo(t1.getCreatedDate()));
-
-        for (int i = 0; i < Math.min(n, transactions.size()); i++) {
-            lastTransactions.add(transactions.get(i));
-        }
         return lastTransactions;
     }
 
@@ -142,22 +130,15 @@ public class AnalyticsService {
             return transactionPriorityQueue;
         }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())) {
-                    if (transactionPriorityQueue.size() < n) {
-                        transactionPriorityQueue.offer(transaction);
-                    } else if (transactionPriorityQueue.peek() != null &&
-                            transactionPriorityQueue.peek().getValue().compareTo(transaction.getValue()) < 0) {
-                        transactionPriorityQueue.poll();
-                        transactionPriorityQueue.offer(transaction);
-                    }
-                }
-            }
-        }
+        transactionPriorityQueue = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .limit(n)
+                .collect(Collectors.toCollection
+                        (() -> new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())));
+
         return transactionPriorityQueue;
     }
-
-
 }
 

@@ -1,9 +1,17 @@
 package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.User;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Сервис отвечает за управление платежами и переводами
@@ -27,6 +35,68 @@ public class TransactionService {
             }
         }
         return validCategories;
+    }
+
+    /**
+     * Фильтрует транзакции пользователя с использованием Predicate.
+     *
+     * @param user      - пользователь
+     * @param predicate - условие фильтрации
+     * @return список транзакций, удовлетворяющих условию
+     */
+    public List<Transaction> filterTransactions(User user, Predicate<Transaction> predicate) {
+        if (user == null) {
+            return Collections.emptyList();
+        }
+
+        return user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(predicate)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Преобразует транзакции пользователя с использованием Function.
+     *
+     * @param user     - пользователь
+     * @param function - функция преобразования
+     * @return список строковых представлений транзакций
+     */
+    public List<String> transformTransactions(User user, Function<Transaction, String> function) {
+        if (user == null) {
+            return Collections.emptyList();
+        }
+        return user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .map(function)
+                .collect(Collectors.toList());
+
+    }
+
+    /**
+     * Обрабатывает транзакции пользователя с использованием Consumer.
+     *
+     * @param user     - пользователь
+     * @param consumer - функция обработки
+     */
+    public void processTransactions(User user, Consumer<Transaction> consumer) {
+        if (user == null) {
+            return;
+        }
+
+        user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .forEach(consumer);
+    }
+
+    /**
+     * Создаёт список транзакций с использованием Supplier.
+     *
+     * @param supplier - поставщик
+     * @return созданный список транзакций
+     */
+    public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier) {
+        return supplier.get();
     }
 
 
