@@ -3,6 +3,7 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.AnalyticsService;
+import gigabank.accountmanagement.service.BankAccountService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,6 +19,7 @@ import static gigabank.accountmanagement.service.TransactionService.transactionC
 public class AnalyticServiceTest {
     // Инициализируем сразу, потому что используется один экземпляр класса для всех методов
     private AnalyticsService analyticsService = new AnalyticsService();
+    private BankAccountService bankAccountService = new BankAccountService();
     private User user = new User();
 
     //
@@ -211,19 +213,19 @@ public class AnalyticServiceTest {
     @Test
     public void createNewBankAccount(){
         Boolean newBankAccountForUser
-                = analyticsService.createNewBankAccountForUser(user, bankAccount1);
+                = bankAccountService.createNewBankAccountForUser(user, bankAccount1);
         Assert.assertTrue(newBankAccountForUser);
     }
     @Test
     public void createNewBankAccountInvalidInput(){
         // User = null, получаеми false
         Boolean newBankAccountForUser
-                = analyticsService.createNewBankAccountForUser(null, bankAccount1);
+                = bankAccountService.createNewBankAccountForUser(null, bankAccount1);
         Assert.assertFalse(newBankAccountForUser);
 
         // Bank Account = null, получаем Fasle
         newBankAccountForUser
-                = analyticsService.createNewBankAccountForUser(user, null);
+                = bankAccountService.createNewBankAccountForUser(user, null);
         Assert.assertFalse(newBankAccountForUser);
     }
 
@@ -235,7 +237,7 @@ public class AnalyticServiceTest {
         Transaction transaction = new Transaction("3", TEN_DOLLARS, TransactionType.PAYMENT,
                 BEAUTY_CATEGORY, ONE_MONTH_AGO);
 
-        Boolean result = analyticsService.replenishmentBankAccount(bankAccount1, TEN_DOLLARS, transaction);
+        Boolean result = bankAccountService.replenishmentBankAccount(bankAccount1, TEN_DOLLARS, transaction);
         Assert.assertTrue(result);
         Assert.assertEquals(TEN_DOLLARS, transaction.getValue());
     }
@@ -245,7 +247,7 @@ public class AnalyticServiceTest {
      */
     @Test
     public void deleteBankAccount(){
-        Boolean result = analyticsService.deleteUserBankAccount(user, bankAccount1);
+        Boolean result = bankAccountService.deleteUserBankAccount(user, bankAccount1);
         Assert.assertTrue(result);
     }
 
@@ -254,11 +256,11 @@ public class AnalyticServiceTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void deleteBankAccountInvalidInput(){
-        Boolean result = analyticsService.deleteUserBankAccount(null, bankAccount1);
+        Boolean result = bankAccountService.deleteUserBankAccount(null, bankAccount1);
         Assert.assertFalse(result);
 
         // Получаем ошибку IllegalArgumentException, если нет аккаунта, который мы пытаемся удалить
-        result = analyticsService.deleteUserBankAccount(user, null);
+        result = bankAccountService.deleteUserBankAccount(user, null);
         Assert.assertFalse(result);
     }
 
@@ -266,14 +268,14 @@ public class AnalyticServiceTest {
     @Test
     public void replenishmentBankAccountInvalidInput(){
         // Transaction = null, возвращает false
-        Boolean result = analyticsService.replenishmentBankAccount(bankAccount1, TEN_DOLLARS, null);
+        Boolean result = bankAccountService.replenishmentBankAccount(bankAccount1, TEN_DOLLARS, null);
         Assert.assertFalse(result);
 
         Transaction transaction = new Transaction("3", TEN_DOLLARS, TransactionType.PAYMENT,
                 BEAUTY_CATEGORY, ONE_MONTH_AGO);
 
         // BankAccount = null, возвращает false
-        result = analyticsService.replenishmentBankAccount(null, TEN_DOLLARS, transaction);
+        result = bankAccountService.replenishmentBankAccount(null, TEN_DOLLARS, transaction);
         Assert.assertFalse(result);
     }
 
@@ -287,7 +289,7 @@ public class AnalyticServiceTest {
 
         bankAccount1.setBalance(FIFTEEN_DOLLARS); // Устанавливаем баланс аккаунта на 15 долларов
 
-        Boolean result = analyticsService.paymentFromBankAccount(bankAccount1, transaction);// Перевод транзакции на 10 долларов
+        Boolean result = bankAccountService.paymentFromBankAccount(bankAccount1, transaction);// Перевод транзакции на 10 долларов
 
         Assert.assertTrue(result);
         Assert.assertEquals(FiVE_DOLLARS, bankAccount1.getBalance()); // Получаем остаток 5 долларов
@@ -302,7 +304,7 @@ public class AnalyticServiceTest {
                 = new Transaction("7", TEN_DOLLARS, TransactionType.TRANSFER, EDUCATION_CATEGORY, ONE_DAY_AGO);
 
         bankAccount1.setBalance(FiVE_DOLLARS); // Устанавливаем баланс аккаунта на 5 долларов
-        Boolean result = analyticsService.paymentFromBankAccount(bankAccount1, transaction); // Перевод транзакции на 10 долларов
+        Boolean result = bankAccountService.paymentFromBankAccount(bankAccount1, transaction); // Перевод транзакции на 10 долларов
         Assert.assertFalse(result);
     }
 
@@ -320,7 +322,7 @@ public class AnalyticServiceTest {
         bankAccount1.setBalance(FIFTEEN_DOLLARS);
         bankAccount2.setBalance(TEN_DOLLARS);
 
-        Boolean result = analyticsService.paymentFromAndToAccount(bankAccount1, bankAccount2, TEN_DOLLARS);
+        Boolean result = bankAccountService.paymentFromAndToAccount(bankAccount1, bankAccount2, TEN_DOLLARS);
         Assert.assertTrue(result);
     }
     @Test
@@ -334,7 +336,7 @@ public class AnalyticServiceTest {
         bankAccount1.setBalance(FiVE_DOLLARS);
         bankAccount2.setBalance(TEN_DOLLARS);
 
-        Boolean result = analyticsService.paymentFromAndToAccount(bankAccount1, bankAccount2, TEN_DOLLARS);
+        Boolean result = bankAccountService.paymentFromAndToAccount(bankAccount1, bankAccount2, TEN_DOLLARS);
         Assert.assertFalse(result);
     }
 
