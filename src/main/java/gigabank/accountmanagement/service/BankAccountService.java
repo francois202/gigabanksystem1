@@ -3,8 +3,10 @@ package gigabank.accountmanagement.service;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.User;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
@@ -12,3 +14,7 @@ import java.util.Map;
 public class BankAccountService {
     private Map<User, List<BankAccount>> userAccounts;
 }
+
+
+
+
