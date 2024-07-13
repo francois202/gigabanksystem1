@@ -4,13 +4,17 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
-import org.w3c.dom.ls.LSOutput;
+
+import gigabank.accountmanagement.service.Generate.TransactionTest;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Stream;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static gigabank.accountmanagement.entity.TransactionType.*;
 
@@ -35,19 +39,12 @@ public class AnalyticsService {
             return BigDecimal.ZERO;
         }
 
-        for (Transaction transaction : bankAccount.getTransactions()) {
-
-            if (transaction.getCategory() != category) {
-                continue;
-            }
-
-            if (transaction.getCategory().equals(category)
-                && transaction.getType().equals(PAYMENT)
-                && transaction.getCreatedDate().isAfter(minusMonth)) {
-
-                sum = sum.add(transaction.getValue());
-            }
-        }
+        sum = bankAccount.getTransactions().stream()
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .filter(transaction -> StringUtils.equals(transaction.getCategory(), category))
+                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
+                .map(transaction -> transaction.getValue())
+                .reduce(sum, BigDecimal::add);
 
         return sum;
     }
@@ -62,35 +59,21 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> categorySum = new HashMap<>();
+        Set<String> validateCategories = transactionService.validateCategories(categories);
 
-        if (user == null) {
-            return new HashMap<>();
+        if (user == null || validateCategories.size() == 0) {
+            return categorySum;
         }
 
-        for (String category : categories) {
-            categorySum.put(category, BigDecimal.ZERO);
-        }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType() == PAYMENT &&
-                    transaction.getCreatedDate().isAfter(minusMonth)) {
-
-                    String category = transaction.getCategory();
-
-                    if (categories.contains(category)) {
-                        BigDecimal currentSum = categorySum.get(category);
-                        BigDecimal updateSum = currentSum.add(transaction.getValue());
-
-                        categorySum.put(category, updateSum);
-                    } else {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-            }
-        }
+        categorySum = user.getBankAccounts().stream()
+                .map(BankAccount::getTransactions)
+                .flatMap(List::stream)
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .filter(transaction -> validateCategories.contains(transaction.getCategory()))
+                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
 
         return categorySum;
     }
@@ -103,86 +86,100 @@ public class AnalyticsService {
      */
     public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
         LinkedHashMap<String, List<Transaction>> result = new LinkedHashMap<>();
-        List<Transaction> transactionList = new ArrayList<>();
 
         if (user == null) {
             return result;
         }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType() == PAYMENT) {
-                    transactionList.add(transaction);
-                }
-            }
-        }
-        transactionList.sort(Comparator.comparing(Transaction::getValue).reversed());
-
-
-        for (Transaction transaction : transactionList) {
-            result.computeIfAbsent(transaction.getCategory(), key -> new ArrayList<>()).add(transaction);
-        }
-
+        result = user.getBankAccounts().stream()
+                .map(BankAccount::getTransactions)
+                .flatMap(List::stream)
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
 
         return result;
     }
 
     public LinkedHashMap<LocalDateTime, Transaction> getTransactionListByIdentification(User user, int num) {
         LinkedHashMap<LocalDateTime, Transaction> result = new LinkedHashMap<>();
-        List<Transaction> transactionTime = new ArrayList<>();
 
         if (user == null) {
             return result;
         }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                transactionTime.add(transaction);
-            }
-        }
-
-        transactionTime.sort(Comparator.comparing(transaction -> transaction.getCreatedDate().getDayOfMonth(),
-                Comparator.reverseOrder()));
-
-
-        for (int i = 0; i < Math.min(num, transactionTime.size()); i++) {
-            result.put(transactionTime.get(i).getCreatedDate(), transactionTime.get(i));
-        }
+        LinkedHashMap<LocalDateTime, Transaction> collect = user.getBankAccounts().stream()
+                .map(BankAccount::getTransactions)
+                .flatMap(Collection::stream)
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .sorted(Comparator.comparing(transaction -> transaction.getCreatedDate().getDayOfMonth(), Comparator.reverseOrder()))
+                .limit(num)
+                .collect(Collectors.toMap(Transaction::getCreatedDate, Function.identity(),
+                        (existingValue, newValue) -> existingValue, LinkedHashMap::new));
 
 
-        return result;
+        return collect;
     }
 
     public PriorityQueue<Transaction> getLargestUserTransaction(User user, int num) {
         PriorityQueue<Transaction> result = new PriorityQueue<>(Comparator.comparing(transaction -> transaction.getValue(),
                 Comparator.reverseOrder()));
-        List<Transaction> transactionsList = new ArrayList<>();
 
         if (user == null) {
             return result;
         }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (!bankAccount.getTransactions().isEmpty() && bankAccount.getTransactions().size() >= num) {
-                    if (transaction.getType() == PAYMENT) {
-                        transactionsList.add(transaction);
-                    } else {
-                        continue;
-                    }
-                } else {
-                    return result;
-                }
-            }
-        }
-        transactionsList.sort(Comparator.comparing(Transaction::getValue).reversed());
-
-
-        for (int i = 0; i < Math.min(num, transactionsList.size()); i++) {
-            result.add(transactionsList.get(i));
-        }
-
+        result = user.getBankAccounts().stream()
+                .map(BankAccount::getTransactions)
+                .flatMap(Collection::stream)
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .limit(num)
+                .collect(Collectors.toCollection(
+                        () -> new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())
+                ));
 
         return result;
+    }
+
+    public void analyzePerformances(LinkedList<TransactionTest> transactions) {
+        long withoutParallel = analyzeWithoutParallel(transactions);
+        long WithParallel = analyzeWithParallel(transactions);
+
+        System.out.println("Program was completed: " + withoutParallel + " without parallel");
+        System.out.println("Program was completed: " + WithParallel + " with parallel");
+    }
+
+    private long analyzeWithoutParallel(LinkedList<TransactionTest> transactions) {
+        long start = System.currentTimeMillis();
+        BigDecimal result = BigDecimal.ZERO;
+
+        result = transactions.stream()
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
+                .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
+                .map(TransactionTest::getValue)
+                .reduce(result, BigDecimal::add);
+
+        long end = System.currentTimeMillis();
+
+        return end - start;
+    }
+
+    private long analyzeWithParallel(LinkedList<TransactionTest> transactions) {
+        long start = System.currentTimeMillis();
+        BigDecimal result = BigDecimal.ZERO;
+
+        result = transactions.stream()
+                .parallel()
+                .filter(transaction -> transaction.getType().equals(PAYMENT))
+                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
+                .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
+                .map(TransactionTest::getValue)
+                .reduce(result, BigDecimal::add);
+
+        long end = System.currentTimeMillis();
+
+        return (end - start);
     }
 }

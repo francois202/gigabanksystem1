@@ -27,14 +27,14 @@ public class BankAccountService {
     }
 
     public Boolean deleteUserBankAccount(User user, BankAccount bankAccount) {
-        if (user == null) {
+        if (user == null || bankAccount == null) {
             return false;
         }
         if (user.getBankAccounts().contains(bankAccount)) {
             user.getBankAccounts().remove(bankAccount);
             return true;
         } else {
-            throw new IllegalArgumentException("Bank account does not exist");
+            return false;
         }
     }
 

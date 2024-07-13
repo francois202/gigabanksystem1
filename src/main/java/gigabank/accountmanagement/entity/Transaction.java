@@ -19,6 +19,5 @@ public class Transaction{
     private BigDecimal value;
     private TransactionType type;
     private String category;
-//    private BankAccount bankAccount;
     private LocalDateTime createdDate;
 }

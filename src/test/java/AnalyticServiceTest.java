@@ -20,6 +20,7 @@ public class AnalyticServiceTest {
     // Инициализируем сразу, потому что используется один экземпляр класса для всех методов
     private AnalyticsService analyticsService = new AnalyticsService();
     private BankAccountService bankAccountService = new BankAccountService();
+    private TransactionService transactionService = new TransactionService();
     private User user = new User();
 
     //
@@ -54,7 +55,7 @@ public class AnalyticServiceTest {
                 HEALTH_CATEGORY, ONE_WEEK_AGO));
 
         bankAccount2.getTransactions().add(new Transaction("3", FiVE_DOLLARS, TransactionType.PAYMENT,
-                BEAUTY_CATEGORY, ONE_MONTH_AGO));
+                BEAUTY_CATEGORY, ONE_DAY_AGO));
         bankAccount2.getTransactions().add(new Transaction("4", TEN_DOLLARS, TransactionType.PAYMENT,
                 EDUCATION_CATEGORY, FOUR_DAYS_AGO));
 
@@ -99,9 +100,10 @@ public class AnalyticServiceTest {
     public void getMonthlySpendingByCategories() {
         Map<String, BigDecimal> result =
                 analyticsService.getMonthlySpendingByCategories(user, transactionCategories);
+        System.out.println(result);
 
         Assert.assertNotNull(result);
-        Assert.assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY));
+        Assert.assertEquals(FIFTEEN_DOLLARS, result.get(BEAUTY_CATEGORY));
         Assert.assertEquals(FIFTEEN_DOLLARS, result.get(HEALTH_CATEGORY));
         Assert.assertEquals(TEN_DOLLARS, result.get(EDUCATION_CATEGORY));
     }
@@ -152,9 +154,9 @@ public class AnalyticServiceTest {
     @Test
     public void getTransactionListByIdentification() {
         LinkedHashMap<LocalDateTime, Transaction> result
-                = analyticsService.getTransactionListByIdentification(user, 4);
+                = analyticsService.getTransactionListByIdentification(user, 2);
 
-        Assert.assertEquals(4, result.size());
+        Assert.assertEquals(2, result.size());
     }
 
     /**
@@ -175,7 +177,6 @@ public class AnalyticServiceTest {
     public void getLargestUserTransaction() {
         PriorityQueue<Transaction> result
                 = analyticsService.getLargestUserTransaction(user, 2);
-
         Assert.assertEquals(2, result.size());
 
         Transaction first = result.poll();
@@ -254,12 +255,12 @@ public class AnalyticServiceTest {
     /**
      * User = null, получаем false
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void deleteBankAccountInvalidInput(){
         Boolean result = bankAccountService.deleteUserBankAccount(null, bankAccount1);
         Assert.assertFalse(result);
 
-        // Получаем ошибку IllegalArgumentException, если нет аккаунта, который мы пытаемся удалить
+        // Bank account = null, получаем false
         result = bankAccountService.deleteUserBankAccount(user, null);
         Assert.assertFalse(result);
     }
@@ -339,5 +340,6 @@ public class AnalyticServiceTest {
         Boolean result = bankAccountService.paymentFromAndToAccount(bankAccount1, bankAccount2, TEN_DOLLARS);
         Assert.assertFalse(result);
     }
+
 
 }

@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.service;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -14,4 +15,15 @@ public class TransactionService {
     public Boolean isValidCategory(String category) {
         return transactionCategories.contains(category);
     }
+
+    public Set<String> validateCategories(Set<String> categories) {
+        Set<String> validCategories = new HashSet<>();
+        for (String category : categories) {
+            if (isValidCategory(category)) {
+                validCategories.add(category);
+            }
+        }
+        return validCategories;
+    }
+
 }
