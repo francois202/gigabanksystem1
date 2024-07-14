@@ -155,8 +155,8 @@ public class AnalyticsService {
     }
 
     private long analyzeWithoutParallel(LinkedList<TransactionTest> transactions) {
-        long start = System.currentTimeMillis();
         BigDecimal result = BigDecimal.ZERO;
+        long start = System.currentTimeMillis();
 
         result = transactions.stream()
                 .filter(transaction -> transaction.getType().equals(PAYMENT))
@@ -171,8 +171,8 @@ public class AnalyticsService {
     }
 
     private long analyzeWithParallel(LinkedList<TransactionTest> transactions) {
-        long start = System.currentTimeMillis();
         BigDecimal result = BigDecimal.ZERO;
+        long start = System.currentTimeMillis();
 
         result = transactions.stream()
                 .parallel()
