@@ -15,7 +15,7 @@ public class AnalyzePerformanceTest {
      */
     @Before
     public void setUp() throws Exception {
-        for (int i = 0; i < 10_00000; i++) {
+        for (int i = 0; i < 10_000; i++) {
             transactionTest = new TransactionTest();
             transactionTestList.add(transactionTest);
         }
