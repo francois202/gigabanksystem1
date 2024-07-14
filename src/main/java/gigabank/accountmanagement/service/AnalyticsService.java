@@ -163,7 +163,6 @@ public class AnalyticsService {
                 .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
                 .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
                 .map(TransactionTest::getValue)
-                .limit(transactions.size() / 2)
                 .reduce(result, BigDecimal::add);
 
         long end = System.currentTimeMillis();
@@ -181,7 +180,6 @@ public class AnalyticsService {
                 .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
                 .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
                 .map(TransactionTest::getValue)
-                .limit(transactions.size() / 2)
                 .reduce(result, BigDecimal::add);
 
         long end = System.currentTimeMillis();
