@@ -7,6 +7,8 @@ target/
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
+.idea/dbnavigator.xml
+.idea/material_theme_project_new.xml
 .idea/libraries/
 *.iws
 *.iml
