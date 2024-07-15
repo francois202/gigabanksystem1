@@ -1,26 +1,33 @@
 package gigabank.accountmanagement.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 /**
  * Информация о банковском счете пользователя
  */
-@Data
+@Getter @Setter
 public class BankAccount {
-    private String id;
-    private BigDecimal balance;
+    private String id = "";
+    private BigDecimal balance = BigDecimal.ZERO;
     private User owner;
     private List<Transaction> transactions = new ArrayList<>();
+
+    public BankAccount() {
+    }
 
     public BankAccount(User user) {
         this.id = generateBankAccountId();
         this.balance = BigDecimal.ZERO;
-        this.owner = user;
+        if (user != null) {
+            this.owner = user;
+        }
     }
 
     public BankAccount(String id, BigDecimal balance, User owner) {
@@ -34,31 +41,32 @@ public class BankAccount {
         int randomId = random.nextInt(1, 10000);
         return String.valueOf(randomId);
     }
-    /*
-     * Переопределение методов hashCode() и equals() вручную.
-     * Так как автоматические методы lombock вызывают рекурсию
-     * при размещении в Map<User, List<BankAccount>>.
-     */
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 31 * result + id.hashCode();
-        return result;
-    }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        BankAccount other = (BankAccount) obj;
-        return id.equals(other.id);
-    }
+
     @Override
     public String toString() {
-        String var10000 = this.getId();
-        return "BankAccount(id=" + var10000 + ", balance=" + this.getBalance() + ", owner=" + this.getOwner().getFirstName() + " " + this.getOwner().getLastName() + ", transactions=" + this.getTransactions() + ")";
+        return "BankAccount{" +
+                "id='" + id + '\'' +
+                ", balance=" + balance +
+                ", owner=" + "id:" + owner.getId() + " " + owner.getFirstName() + " " + owner.getLastName() +
+                ", transactions=" + transactions +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BankAccount that)) return false;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(balance, that.balance) &&
+                Objects.equals(owner, that.owner) &&
+                Objects.equals(transactions, that.transactions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                id,
+                balance,
+                owner.getId(), owner.getFirstName(), owner.getMiddleName(), owner.getLastName(), owner.getBirthDate());
     }
 }

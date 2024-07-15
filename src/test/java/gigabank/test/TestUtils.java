@@ -26,6 +26,7 @@ public class TestUtils {
     public static final String BEAUTY_CATEGORY = "Beauty";
     public static final String HEALTH_CATEGORY = "Health";
     public static final String EDUCATION_CATEGORY = "Education";
+    public static final String TRANSFER_CATEGORY = "Transfer";
     public static final String CATEGORY_NULL = null;
 
 
@@ -83,6 +84,14 @@ public class TestUtils {
             bankAccountTest3,
             FIVE_MONTHS_AGO);
 
+    public static Transaction transaction5 = new Transaction(
+            "5",
+            TWENTY_DOLLARS,
+            TransactionType.TRANSFER,
+            TRANSFER_CATEGORY,
+            bankAccountTest3,
+            FIVE_MONTHS_AGO);
+
     public static void usersInitializer() {
         userIvan.getBankAccounts().clear();
         userIvan.getBankAccounts().add(bankAccountTest1);
@@ -98,6 +107,6 @@ public class TestUtils {
         bankAccountTest2.getTransactions().add(transaction3);
         bankAccountTest3.getTransactions().clear();
         bankAccountTest3.getTransactions().add(transaction4);
+        bankAccountTest3.getTransactions().add(transaction5);
     }
 }
-

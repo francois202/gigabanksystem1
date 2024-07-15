@@ -73,7 +73,7 @@ public class TransferTransactionTest {
     }
 
     @Test
-    void checkNullInput() {
+    void checkInputNull() {
         boolean successTransfer1 = true;
         boolean successTransfer2 = true;
         boolean successTransfer3 = true;

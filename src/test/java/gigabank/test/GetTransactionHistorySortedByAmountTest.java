@@ -30,7 +30,7 @@ public class GetTransactionHistorySortedByAmountTest {
         LinkedHashMap<String, List<Transaction>> transactionsMap = analyticsService
                 .getTransactionHistorySortedByAmount(userIvan);
 
-        String topCategory = transactionsMap.keySet().iterator().next();;
+        String topCategory = transactionsMap.keySet().iterator().next();
         BigDecimal topAmount = BigDecimal.ZERO;
         for (Map.Entry <String, List<Transaction>> transaction : transactionsMap.entrySet()) {
             if(transaction.getKey().contains(topCategory)) {

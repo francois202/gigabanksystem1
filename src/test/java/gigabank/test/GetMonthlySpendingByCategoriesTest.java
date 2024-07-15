@@ -6,7 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.Map;
+import java.util.*;
 
 import static gigabank.test.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,15 +32,15 @@ public class GetMonthlySpendingByCategoriesTest {
         Map<String, BigDecimal> monthlySpendingMap = analyticsService.getMonthlySpendingByCategories(
                 userIvan, TransactionService.TRANSACTION_CATEGORIES);
 
-        for (Map.Entry<String, BigDecimal> sum : monthlySpendingMap.entrySet()) {
-            if (sum.getKey().equals(HEALTH_CATEGORY)) {
-                healthSum = sum.getValue();
+        for (Map.Entry<String, BigDecimal> categorySum : monthlySpendingMap.entrySet()) {
+            if (categorySum.getKey().equals(HEALTH_CATEGORY)) {
+                healthSum = categorySum.getValue();
             }
-            if (sum.getKey().equals(BEAUTY_CATEGORY)) {
-                beautySum = sum.getValue();
+            if (categorySum.getKey().equals(BEAUTY_CATEGORY)) {
+                beautySum = categorySum.getValue();
             }
-            if (sum.getKey().equals(EDUCATION_CATEGORY)) {
-                educationSum = sum.getValue();
+            if (categorySum.getKey().equals(EDUCATION_CATEGORY)) {
+                educationSum = categorySum.getValue();
             }
         }
         assertEquals(TWENTY_DOLLARS, healthSum);
@@ -49,7 +49,16 @@ public class GetMonthlySpendingByCategoriesTest {
     }
 
     @Test
-    void getEmptyMapIfInputCategoriesNotValid() {
+    void mustGetEmptyMapIfInputCategoriesInvalid() {
+        Set<String> invalidCategories = Set.of("Sex", "Drugs", "Rock-n-Roll");
+        Map<String, BigDecimal> monthlySpendingMap = analyticsService.getMonthlySpendingByCategories(
+                userIvan, invalidCategories);
+
+        assertTrue(monthlySpendingMap.isEmpty());
+    }
+
+    @Test
+    void mustGetEmptyMapIfInputUserNull() {
         Map<String, BigDecimal> monthlySpendingMap = analyticsService.getMonthlySpendingByCategories(
                 userNull, TransactionService.TRANSACTION_CATEGORIES);
 
@@ -57,15 +66,7 @@ public class GetMonthlySpendingByCategoriesTest {
     }
 
     @Test
-    void getEmptyMapIfInputUserNull() {
-        Map<String, BigDecimal> monthlySpendingMap = analyticsService.getMonthlySpendingByCategories(
-                userNull, TransactionService.TRANSACTION_CATEGORIES);
-
-        assertTrue(monthlySpendingMap.isEmpty());
-    }
-
-    @Test
-    void checkInputCategoriesNull() {
+    void mustGetEmptyMapIfInputCategoriesNull() {
         Map<String, BigDecimal> monthlySpendingMap = analyticsService.getMonthlySpendingByCategories(
                 userIvan, null);
 

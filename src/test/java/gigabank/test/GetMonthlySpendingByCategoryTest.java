@@ -44,5 +44,4 @@ public class GetMonthlySpendingByCategoryTest {
         BigDecimal sum = analyticsService.getMonthlySpendingByCategory(bankAccountTest3, CATEGORY_NULL);
         assertEquals(BigDecimal.ZERO, sum);
     }
-
 }
