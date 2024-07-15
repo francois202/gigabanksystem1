@@ -16,7 +16,13 @@
 
     <dependencies>
         <!-- Добавьте другие зависимости здесь -->
-
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Lombok dependency -->
         <dependency>
             <groupId>org.projectlombok</groupId>
