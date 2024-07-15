@@ -17,7 +17,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class TransactionServiceTest {
     private TransactionService transactionService = new TransactionService();

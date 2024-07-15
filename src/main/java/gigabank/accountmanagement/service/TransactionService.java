@@ -71,7 +71,7 @@ public class TransactionService {
                                                    BiFunction<List<Transaction>, List<Transaction>, List<Transaction>> biFunction) {
 
         if (transaction1 == null || transaction2 == null) {
-            return Collections.emptyList();
+            throw new IllegalArgumentException("Transactions cannot be null");
         }
 
 
