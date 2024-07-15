@@ -83,7 +83,6 @@ public class AnalyticsService {
     public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
         LinkedHashMap<String, List<Transaction>> transactionsMap = new LinkedHashMap<>();
         List<Transaction> transactionsValueDesc = new ArrayList<>();
-        Comparator<Transaction> valueComparator = new TransactionValueComparatorDesc();
 
         if (user == null) {
             return transactionsMap;
@@ -98,25 +97,12 @@ public class AnalyticsService {
                 }
             }
         }
-        transactionsValueDesc.sort(valueComparator);
+        transactionsValueDesc.sort((v1, v2) -> v2.getValue().compareTo(v1.getValue()));
 
         for (Transaction transaction: transactionsValueDesc) {
             transactionsMap.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
         }
         return transactionsMap;
-    }
-
-    private static class TransactionValueComparatorDesc implements Comparator<Transaction> {
-        @Override
-        public int compare (Transaction t1, Transaction t2) {
-            if (t1.getValue().compareTo(t2.getValue()) > 0) {
-                return -1;
-            }
-            else if (t1.getValue().compareTo(t2.getValue()) < 0) {
-                return 1;
-            }
-            else { return 0; }
-        }
     }
 
     /**
@@ -155,24 +141,20 @@ public class AnalyticsService {
             return topTransactions;
         }
 
-        PriorityQueue<Transaction> allTransactions = new PriorityQueue<>(
-                Comparator.comparing(Transaction::getValue).reversed());
-
         for (BankAccount bankAccount : user.getBankAccounts()) {
             for (Transaction transaction: bankAccount.getTransactions()) {
-                if (TransactionService.TRANSACTION_CATEGORIES.contains(transaction.getCategory())
+                if (transaction.getCategory() != null
+                        && TransactionService.TRANSACTION_CATEGORIES.contains(transaction.getCategory())
                         && TransactionType.PAYMENT.equals(transaction.getType())) {
-
-                    allTransactions.add(transaction);
+                    if (topTransactions.size() < n) {
+                        topTransactions.offer(transaction);
+                    } else if (topTransactions.peek() != null
+                            && topTransactions.peek().getValue().compareTo(transaction.getValue()) < 0) {
+                        topTransactions.poll();
+                        topTransactions.offer(transaction);
+                    }
                 }
             }
-        }
-
-        int i = 0;
-        int size = allTransactions.size();
-        while (i < Math.min(n, size)) {
-            topTransactions.offer(allTransactions.poll());
-            i++;
         }
         return topTransactions;
     }

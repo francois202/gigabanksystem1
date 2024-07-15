@@ -1,20 +1,22 @@
 package gigabank.accountmanagement.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Random;
 
 /**
  * Информация о совершенной банковской транзакции
  */
-@Data
+@Getter @Setter
 public class Transaction {
-    private String id;
-    private BigDecimal value;
+    private String id = "";
+    private BigDecimal value = BigDecimal.ZERO;
     private TransactionType type;
-    private String category;
+    private String category = "";
     private BankAccount bankAccount;
     private LocalDateTime createdDate;
 
@@ -48,32 +50,38 @@ public class Transaction {
         return String.valueOf(randomId);
     }
 
-    /*
-     * Переопределение методов hashCode() и equals() вручную.
-     * Так как автоматические методы lombock вызывают рекурсию
-     * при размещении в Map<User, List<BankAccount>>.
-     */
     @Override
-    public int hashCode() {
-        int result = 17;
-        result = 31 * result + id.hashCode();
-        return result;
-    }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        Transaction other = (Transaction) obj;
-        return id.equals(other.id);
+    public String toString() {
+        return "Transaction{" +
+                "id='" + id + '\'' +
+                ", value=" + value +
+                ", type=" + type +
+                ", category='" + category + '\'' +
+                ", bankAccount id=" + bankAccount.getId() +
+                ", createdDate=" + createdDate +
+                '}';
     }
 
     @Override
-    public String toString() {
-        String var10000 = this.getId();
-        return "Transaction(id=" + var10000 + ", value=" + this.getValue() + ", type=" + this.getType() + ", category=" + this.getCategory() + ", bankAccount=" + this.getBankAccount().getId() + ", createdDate=" + this.getCreatedDate() + ")";
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Transaction that)) return false;
+        return Objects.equals(id, that.id)
+                && Objects.equals(value, that.value)
+                && type == that.type
+                && Objects.equals(category, that.category)
+                && Objects.equals(bankAccount, that.bankAccount)
+                && Objects.equals(createdDate, that.createdDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                id,
+                value,
+                type,
+                category,
+                bankAccount.getId(), bankAccount.getBalance(),
+                createdDate);
     }
 }
