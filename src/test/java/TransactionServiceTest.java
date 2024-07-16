@@ -118,9 +118,11 @@ public class TransactionServiceTest {
     // Проверяем, все ли элементы в списке являются строкой
     private Boolean checkTypeOfTransaction(List<String> transactions) {
         for (String transaction : transactions) {
-            return transaction instanceof String;
+            if(!(transaction instanceof String)){
+                return false;
+            }
         }
-        return false;
+        return true;
     }
 
     /**
