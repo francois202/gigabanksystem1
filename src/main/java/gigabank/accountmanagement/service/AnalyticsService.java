@@ -2,7 +2,6 @@ package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
-import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 
 import gigabank.accountmanagement.service.Generate.TransactionTest;
@@ -21,9 +20,8 @@ import static gigabank.accountmanagement.entity.TransactionType.*;
  * Сервис предоставляет аналитику по операциям пользователей
  */
 public class AnalyticsService {
-    private LocalDateTime minusMonth = LocalDateTime.now().minus(1L, ChronoUnit.MONTHS);
-
-    private TransactionService transactionService = new TransactionService();
+    private final LocalDateTime minusMonth = LocalDateTime.now().minus(1L, ChronoUnit.MONTHS);
+    private final TransactionService transactionService = new TransactionService();
 
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
@@ -42,7 +40,7 @@ public class AnalyticsService {
                 .filter(transaction -> transaction.getType().equals(PAYMENT))
                 .filter(transaction -> StringUtils.equals(transaction.getCategory(), category))
                 .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
-                .map(transaction -> transaction.getValue())
+                .map(Transaction::getValue)
                 .reduce(sum, BigDecimal::add);
 
         return sum;
@@ -60,7 +58,7 @@ public class AnalyticsService {
         Map<String, BigDecimal> categorySum = new HashMap<>();
         Set<String> validateCategories = transactionService.validateCategories(categories);
 
-        if (user == null || validateCategories.size() == 0) {
+        if (user == null || validateCategories.isEmpty()) {
             return categorySum;
         }
 
@@ -107,7 +105,7 @@ public class AnalyticsService {
             return result;
         }
 
-        LinkedHashMap<LocalDateTime, Transaction> collect = user.getBankAccounts().stream()
+        return user.getBankAccounts().stream()
                 .map(BankAccount::getTransactions)
                 .flatMap(Collection::stream)
                 .filter(transaction -> transaction.getType().equals(PAYMENT))
@@ -115,9 +113,6 @@ public class AnalyticsService {
                 .limit(num)
                 .collect(Collectors.toMap(Transaction::getCreatedDate, Function.identity(),
                         (existingValue, newValue) -> existingValue, LinkedHashMap::new));
-
-
-        return collect;
     }
 
     public PriorityQueue<Transaction> getLargestUserTransaction(User user, int num) {
