@@ -4,6 +4,8 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +14,11 @@ import java.util.*;
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@RequiredArgsConstructor
 public class AnalyticsService {
+
+    private final TransactionService TRANSACTION_SERVICE;
+    private final LocalDateTime ONE_MONTH = LocalDateTime.now().minusMonths(1L);
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
      * @param bankAccount - счет
@@ -20,13 +26,13 @@ public class AnalyticsService {
      */
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category){
         BigDecimal amount = BigDecimal.ZERO;
-        if (bankAccount == null || !bankAccount.getTransactions().contains(category))
+        if (bankAccount == null || !TRANSACTION_SERVICE.isValidCategories(category))
             return amount;
-        LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
+
         for (Transaction transaction : bankAccount.getTransactions()) {
             if (TransactionType.PAYMENT.equals(transaction.getType())
-                    && transaction.getCategory().equals(category)
-                    && transaction.getCreatedDate().isAfter(oneMonth)) {
+                    && StringUtils.equals(transaction.getCategory(), category)
+                    && transaction.getCreatedDate().isAfter(ONE_MONTH)) {
                 amount = amount.add(transaction.getValue());
             }
         }
@@ -43,15 +49,15 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories){
         Map<String, BigDecimal> result = new HashMap<>();
-        Set<String> validCategories = new TransactionService().validateCategories(categories);
+        Set<String> validCategories = TRANSACTION_SERVICE.validateCategories(categories);
         if (user == null || validCategories.isEmpty())
             return result;
-        LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
+
         for (BankAccount bankAccount : user.getBankAccounts()){
             for(Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType())
                         && validCategories.contains(transaction.getCategory())
-                        && transaction.getCreatedDate().isAfter(oneMonth)){
+                        && transaction.getCreatedDate().isAfter(ONE_MONTH)){
                     result.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
                 }
             }
@@ -69,6 +75,7 @@ public class AnalyticsService {
         LinkedHashMap<String, List<Transaction>> result = new LinkedHashMap<>();
         if (user == null)
             return result;
+
          List<Transaction> transactions = new ArrayList<>();
         for (BankAccount bankAccount : user.getBankAccounts()){
             for (Transaction transaction : bankAccount.getTransactions()){
@@ -101,7 +108,8 @@ public class AnalyticsService {
         for (BankAccount bankAccount : user.getBankAccounts()){
             allTransaction.addAll(bankAccount.getTransactions());
         }
-        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate));
+        // .sort((t1, t2) -> t2.getCreatedDate().compareTo(t1.getCreatedDate())); --> так не хочет работать не видит .getCreatedDate()
+        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
 
         for (int i = 0; i < Math.min(n, allTransaction.size()); i++) {
             result.add(allTransaction.get(i));
@@ -116,11 +124,12 @@ public class AnalyticsService {
      * @param n - кол-во последних транзакций
      */
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n){
-        PriorityQueue<Transaction> result = new PriorityQueue<>();
+        PriorityQueue<Transaction> result = new PriorityQueue<>(Comparator.comparing(Transaction::getValue));
 
         if (user == null)
             return result;
-        List<Transaction> allTransaction = new ArrayList<>();
+
+
         for (BankAccount bankAccount : user.getBankAccounts()){
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType())){

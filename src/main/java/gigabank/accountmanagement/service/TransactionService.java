@@ -12,10 +12,14 @@ public class TransactionService {
     public static Set<String> transactionCategories = Set.of(
             "Health", "Beauty", "Education");
 
+    public boolean isValidCategories(String category){
+        return category != null && transactionCategories.contains(category);
+    }
+
     public Set<String> validateCategories (Set<String> categories) {
         Set<String> result = new HashSet<>();
         for (String category : categories) {
-            if (transactionCategories.contains(category))
+            if (isValidCategories(category))
                 result.add(category);
         }
         return result;
