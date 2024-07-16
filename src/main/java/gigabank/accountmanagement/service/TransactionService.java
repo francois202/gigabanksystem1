@@ -1,10 +1,14 @@
 package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.User;
 
-import javax.swing.text.html.ListView;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
@@ -30,5 +34,41 @@ public class TransactionService {
             }
         }
         return validCategories;
+    }
+
+    public List<Transaction> filterTransactions(User user, Predicate<Transaction> predicate) {
+        if (user == null) {
+            return Collections.emptyList();
+        }
+
+        return user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(predicate)
+                .collect(Collectors.toList());
+    }
+
+    public List<String> transformTransactions(User user, Function<Transaction, String> stringTransaction) {
+        if (user == null) {
+            return Collections.emptyList();
+        }
+
+        return user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .map(stringTransaction)
+                .collect(Collectors.toList());
+    }
+
+    public void processTransactions(User user, Consumer<Transaction> consumer) {
+        if (user == null) {
+            return;
+        }
+
+        user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .forEach(consumer);
+    }
+
+    public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier){
+        return supplier.get();
     }
 }

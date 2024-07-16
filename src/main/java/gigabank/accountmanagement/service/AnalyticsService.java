@@ -4,11 +4,12 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
@@ -30,18 +31,18 @@ public class AnalyticsService {
 
 
         if (bankAccount == null || transactionService.isValidCategory(category)) {
-            return BigDecimal.ZERO;
+            return total;
         }
-        LocalDateTime month = LocalDateTime.now().minusMonths(1);
-        for (Transaction transaction : bankAccount.getTransactions()) {
-            if (transaction.getCategory().equals(category) && (transaction.getType().equals(TransactionType.PAYMENT) &&
-                    transaction.getCreatedDate().isAfter(month))) {
 
-                total = total.add(transaction.getValue());
+        LocalDateTime monthLater = LocalDateTime.now().minusMonths(1L);
 
+        total = bankAccount.getTransactions().stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
+                        && StringUtils.equals(transaction.getCategory(), category)
+                        && transaction.getCreatedDate().isAfter(monthLater))
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            }
-        }
         return total;
     }
 
@@ -57,18 +58,20 @@ public class AnalyticsService {
 
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> result = new HashMap<>();
+        Set<String> categorySet = new HashSet<>(categories);
         if (user == null && transactionService.validateCategories(categories).isEmpty()) {
             return result;
         }
 
-        LocalDateTime month = LocalDateTime.now().minusMonths(1);
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType().equals(TransactionType.PAYMENT) && (transaction.getCreatedDate().isAfter(month))) {
-                    result.put(transaction.getCategory(), transaction.getValue());
-                }
-            }
-        }
+        LocalDateTime monthLater = LocalDateTime.now().minusMonths(1);
+
+        result =  user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
+                        && categorySet.contains(transaction.getCategory())
+                        && transaction.getCreatedDate().isAfter(monthLater))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
 
 
         return result;
@@ -80,26 +83,19 @@ public class AnalyticsService {
      * @param user - пользователь
      * @return мапа категория - все операции совершенные по ней
      */
-    public TreeMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
-        TreeMap<String, List<Transaction>> result = new TreeMap<>();
+    public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
+        LinkedHashMap<String, List<Transaction>> result = new LinkedHashMap<>();
 
         if (user == null && transactionService.validateCategories(Collections.emptySet()).isEmpty()) {
             return result;
         }
 
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType().equals(TransactionType.PAYMENT)) {
-                    transactions.add(transaction);
-                }
-            }
-        }
-        transactions.sort(Comparator.comparing(Transaction::getValue));
+        result = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
 
-        for (Transaction transaction : transactions) {
-            result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-        }
         return result;
     }
 
@@ -109,19 +105,13 @@ public class AnalyticsService {
             return result;
         }
 
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            transactions.addAll(bankAccount.getTransactions());
-        }
+        result = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
+                .limit(n)
+                .collect(Collectors.toList());
 
-        transactions.sort(Comparator.comparing(Transaction::getValue));
-        for (Transaction transaction : transactions) {
-            if (transaction.getType().equals(TransactionType.PAYMENT)) {
-                result.add(transaction);
-            }
-        }
         return result;
-
     }
 
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
@@ -130,20 +120,43 @@ public class AnalyticsService {
             return result;
         }
 
-        List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (transaction.getType().equals(TransactionType.PAYMENT)) {
-                    if (result.size() < n) {
-                        result.offer(transaction);
-                    } else if (result.peek().getValue().compareTo(transaction.getValue()) < 0) {
-                        result.poll();
-                        result.offer(transaction);
-                    }
-                }
-            }
-        }
+        result = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .limit(n)
+                .collect(Collectors.toCollection(PriorityQueue::new));
+
         return result;
 
+    }
+
+    public void analyzePerformance(User user) {
+        if (user == null) {
+            return;
+        }
+
+        List<Transaction> transactions = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+                .collect(Collectors.toList());
+
+
+        long startTime = System.nanoTime();
+        Map<String, BigDecimal> sequentialResults = transactions.stream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
+        long sequentialDuration = System.nanoTime() - startTime;
+
+
+        startTime = System.nanoTime();
+        Map<String, BigDecimal> parallelResults = transactions.parallelStream()
+                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
+        long parallelDuration = System.nanoTime() - startTime;
+
+        System.out.println("Время выполнения последовательного стрима: " + sequentialDuration / 1_000_000 + " мс");
+        System.out.println("Время выполнения параллельного стрима: " + parallelDuration / 1_000_000 + " мс");
+        System.out.println("Результаты равны: " + sequentialResults.equals(parallelResults));
     }
 }

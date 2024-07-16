@@ -28,7 +28,7 @@ public class AnalyticsServiceTest {
     private static final LocalDateTime DATE_1_DAY_AGO = LocalDateTime.now().minusDays(1);
 
     private TransactionService transactionService = new TransactionService();
-    private AnalyticsService analyticsService = new AnalyticsService(transactionService);
+    private AnalyticsService analyticsService = new AnalyticsService();
     private User testUser = new User();
     private BankAccount account1;
     private BankAccount account2;
@@ -55,15 +55,12 @@ public class AnalyticsServiceTest {
 
     @Test
     public void testGetMonthlySpendingByCategoryWithInvalidInput() {
-        // Account is null
         BigDecimal spending = analyticsService.getMonthlySpendingByCategory(null, CATEGORY_BEAUTY);
         assertEquals(BigDecimal.ZERO, spending);
 
-        // Category is null
         spending = analyticsService.getMonthlySpendingByCategory(account1, null);
         assertEquals(BigDecimal.ZERO, spending);
 
-        // No transactions in the last month
         account1.getTransactions().clear();
         account1.getTransactions().add(new Transaction("5", AMOUNT_15, TransactionType.PAYMENT, CATEGORY_BEAUTY, DATE_5_MONTHS_AGO));
         spending = analyticsService.getMonthlySpendingByCategory(account1, CATEGORY_BEAUTY);
@@ -84,11 +81,9 @@ public class AnalyticsServiceTest {
     public void testGetMonthlySpendingByCategoriesWithInvalidInput() {
         Set<String> categories = new HashSet<>(Arrays.asList(CATEGORY_BEAUTY, CATEGORY_FOOD));
 
-        // User is null
         Map<String, BigDecimal> spending = analyticsService.getMonthlySpendingByCategories(null, categories);
         assertTrue(spending.isEmpty());
 
-        // No transactions in the last month
         testUser.getBankAccounts().clear();
         account1.getTransactions().clear();
         account1.getTransactions().add(new Transaction("5", AMOUNT_15, TransactionType.PAYMENT, CATEGORY_BEAUTY, DATE_5_MONTHS_AGO));
@@ -112,11 +107,10 @@ public class AnalyticsServiceTest {
 
     @Test
     public void testGetTransactionHistorySortedByAmountWithInvalidInput() {
-        // User is null
+
         TreeMap<String, List<Transaction>> history = analyticsService.getTransactionHistorySortedByAmount(null);
         assertTrue(history.isEmpty());
 
-        // No PAYMENT transactions
         testUser.getBankAccounts().clear();
         account1.getTransactions().clear();
         account1.getTransactions().add(new Transaction("6", AMOUNT_10, TransactionType.DEPOSIT, CATEGORY_BEAUTY, DATE_10_DAYS_AGO));
@@ -139,7 +133,6 @@ public class AnalyticsServiceTest {
         List<Transaction> transactions = analyticsService.getLastNTransactions(null, 2);
         assertTrue(transactions.isEmpty());
 
-        // No transactions
         testUser.getBankAccounts().clear();
         transactions = analyticsService.getLastNTransactions(testUser, 2);
         assertTrue(transactions.isEmpty());
@@ -159,16 +152,47 @@ public class AnalyticsServiceTest {
 
     @Test
     public void testGetTopNLargestTransactionsWithInvalidInput() {
-        // User is null
+
         PriorityQueue<Transaction> largestTransactions = analyticsService.getTopNLargestTransactions(null, 2);
         assertTrue(largestTransactions.isEmpty());
 
-        // No PAYMENT transactions
         testUser.getBankAccounts().clear();
         account1.getTransactions().clear();
         account1.getTransactions().add(new Transaction("6", AMOUNT_10, TransactionType.DEPOSIT, CATEGORY_BEAUTY, DATE_10_DAYS_AGO));
         testUser.getBankAccounts().add(account1);
         largestTransactions = analyticsService.getTopNLargestTransactions(testUser, 2);
         assertTrue(largestTransactions.isEmpty());
+    }
+
+    @Test
+    public void testAnalyzePerformance() {
+        Transaction transaction1 = new Transaction();
+        transaction1.setType(TransactionType.PAYMENT);
+        transaction1.setCategory("Food");
+        transaction1.setValue(new BigDecimal("50.00"));
+        transaction1.setCreatedDate(LocalDateTime.now().minusDays(10));
+
+        Transaction transaction2 = new Transaction();
+        transaction2.setType(TransactionType.PAYMENT);
+        transaction2.setCategory("Utilities");
+        transaction2.setValue(new BigDecimal("150.00"));
+        transaction2.setCreatedDate(LocalDateTime.now().minusDays(20));
+
+        Transaction transaction3 = new Transaction();
+        transaction3.setType(TransactionType.PAYMENT);
+        transaction3.setCategory("Food");
+        transaction3.setValue(new BigDecimal("30.00"));
+        transaction3.setCreatedDate(LocalDateTime.now().minusDays(5));
+
+        BankAccount bankAccount1 = new BankAccount();
+        bankAccount1.setTransactions(Arrays.asList(transaction1, transaction2));
+
+        BankAccount bankAccount2 = new BankAccount();
+        bankAccount2.setTransactions(Collections.singletonList(transaction3));
+
+        User user = new User();
+        user.setBankAccounts(Arrays.asList(bankAccount1, bankAccount2));
+
+        analyticsService.analyzePerformance(user);
     }
 }

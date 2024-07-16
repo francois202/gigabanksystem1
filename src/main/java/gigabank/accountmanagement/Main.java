@@ -1,7 +1,12 @@
 package gigabank.accountmanagement;
 
+import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.service.AnalyticsService;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        AnalyticsService analyticsService = new AnalyticsService();
+        User user = new User();
+        analyticsService.analyzePerformance(user);
     }
 }
