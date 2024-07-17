@@ -1,16 +1,29 @@
-package gigabank.test;
+package gigabank.test.bankaccountservice;
 
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.User;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static gigabank.test.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 public class AddNewBankAccountTest {
+    @BeforeAll
+    static void Initializer() {
+        usersInitializer();
+        bankAccountsInitializer();
+        transactionsInitializer();
+    }
+    @AfterEach
+    void resetBankAccountBalance() {
+        bankAccountTest1.setBalance(BigDecimal.ZERO);
+    }
 
     @Test
     public void newBankAccountMustBeAdded() {
@@ -41,22 +54,23 @@ public class AddNewBankAccountTest {
         bankAccountService.addNewBankAccount(userIvan);
         bankAccountService.addNewBankAccount(userIvan);
 
-        int userMapKeySize = 0;
-        int userMapValueSize = 0;
+        int countUsers = 0;
+        int countBankAccounts = 0;
         for (Map.Entry<User, List<BankAccount>> entry : bankAccountService.getUserAccounts().entrySet()) {
             if (entry.getKey().getFirstName().contains("Ivan")) {
-                userMapKeySize++;
+                countUsers++;
             }
         }
+        System.out.println();
         for (Map.Entry<User, List<BankAccount>> entry : bankAccountService.getUserAccounts().entrySet()) {
             for (BankAccount bankAccount : entry.getValue()) {
                 if (bankAccount.getOwner().getFirstName().contains("Ivan")) {
-                    userMapValueSize++;
+                    countBankAccounts++;
                 }
             }
         }
-        assertEquals(1, userMapKeySize);
-        assertEquals(3, userMapValueSize);
+        assertEquals(1, countUsers);
+        assertEquals(3, countBankAccounts);
     }
 
     @Test

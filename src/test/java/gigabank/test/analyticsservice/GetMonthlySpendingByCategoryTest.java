@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.analyticsservice;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,6 +15,7 @@ public class GetMonthlySpendingByCategoryTest {
     static void Initializer() {
         usersInitializer();
         bankAccountsInitializer();
+        transactionsInitializer();
     }
     @AfterEach
     void resetBankAccountBalance() {
@@ -44,5 +45,4 @@ public class GetMonthlySpendingByCategoryTest {
         BigDecimal sum = analyticsService.getMonthlySpendingByCategory(bankAccountTest3, CATEGORY_NULL);
         assertEquals(BigDecimal.ZERO, sum);
     }
-
 }

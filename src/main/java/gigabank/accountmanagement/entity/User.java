@@ -1,63 +1,68 @@
 package gigabank.accountmanagement.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.Objects;
+
+import static gigabank.accountmanagement.service.Utils.*;
 
 /**
  * Информация о пользователе
  */
-@Data
+@Getter
+@Setter
 public class User {
-    private String id;
-    private String firstName;
-    private String middleName;
-    private String lastName;
-    private LocalDate birthDate;
-    private List<BankAccount> bankAccounts = new ArrayList<>();
+    private String id = "";
+    private String firstName = "";
+    private String middleName = "";
+    private String lastName = "";
+    private LocalDate birthDate = UNKNOWN_DATE;
+    private final List<BankAccount> bankAccounts = new ArrayList<>();
 
-     public User(String firstName, String middleName, String lastName, LocalDate birthDate) {
-        this.id = generateUserId();
-        this.firstName = firstName;
-        this.middleName = middleName;
-        this.lastName = lastName;
-        this.birthDate = birthDate;
+    public User(String firstName, String middleName, String lastName, LocalDate birthDate) {
+        if (firstName != null & middleName != null & lastName != null & birthDate != null) {
+            this.id = generateUserId();
+            this.firstName = firstName;
+            this.middleName = middleName;
+            this.lastName = lastName;
+            this.birthDate = birthDate;
+        }
     }
 
-    private static String generateUserId() {
-        Random random = new Random();
-        int randomId = random.nextInt(1, 1000);
-        return String.valueOf(randomId);
-    }
-    /*
-     * Переопределение методов hashCode() и equals() вручную.
-     * Так как автоматические методы lombock вызывают рекурсию
-     * при размещении в Map<User, List<BankAccount>>.
-     */
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 31 * result + id.hashCode();
-        return result;
-    }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        User other = (User) obj;
-        return id.equals(other.id);
+    public User() {
     }
 
     @Override
     public String toString() {
-        String var10000 = this.getId();
-        return "User(id=" + var10000 + ", firstName=" + this.getFirstName() + ", middleName=" + this.getMiddleName() + ", lastName=" + this.getLastName() + ", birthDate=" + this.getBirthDate() + ", bankAccounts=" + this.getBankAccounts().size() + ")";
+        return "User{" +
+                "id='" + id + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", middleName='" + middleName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", birthDate=" + birthDate +
+                ", bankAccounts=" + bankAccounts +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User other)) return false;
+
+        if (!Objects.equals(id, other.id)) return false;
+        if (!Objects.equals(firstName, other.firstName)) return false;
+        if (!Objects.equals(middleName, other.middleName)) return false;
+        if (!Objects.equals(lastName, other.lastName)) return false;
+        if (!Objects.equals(birthDate, other.birthDate)) return false;
+        return Objects.equals(bankAccounts, other.bankAccounts);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, firstName, middleName, lastName, birthDate);
     }
 }

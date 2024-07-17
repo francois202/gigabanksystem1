@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.transactionservice;
 
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -16,6 +16,7 @@ public class PaymentTransactionTest {
     static void Initializer() {
         usersInitializer();
         bankAccountsInitializer();
+        transactionsInitializer();
     }
     @AfterEach
     void resetBankAccountBalance() {

@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.bankaccountservice;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static gigabank.test.TestUtils.*;

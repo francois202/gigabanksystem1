@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.bankaccountservice;
 
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;

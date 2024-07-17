@@ -10,15 +10,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static gigabank.accountmanagement.service.TransactionService.TRANSACTION_CATEGORIES;
+
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
 public class BankAccountService {
     private static final boolean IS_SUCCESS = true;
-    private Map<User, List<BankAccount>> userAccounts = new HashMap<>();
+    private final Map<User, List<BankAccount>> userAccounts = new HashMap<>();
     public Map<User, List<BankAccount>> getUserAccounts() {
         return this.userAccounts;
     }
+
     public boolean addNewBankAccount(User user) {
         if (user == null) {
             return !IS_SUCCESS;
@@ -44,10 +47,16 @@ public class BankAccountService {
         }
 
         bankAccount.setBalance(bankAccount.getBalance().add(amount));
+
+        String categoryDeposit = TRANSACTION_CATEGORIES.stream()
+                .filter(c -> c.equals("Deposit"))
+                .findFirst()
+                .orElse("");
+
         Transaction transaction = new Transaction(
                 amount,
                 TransactionType.DEPOSIT,
-                "Deposit",
+                categoryDeposit,
                 bankAccount);
 
         bankAccount.getTransactions().add(transaction);

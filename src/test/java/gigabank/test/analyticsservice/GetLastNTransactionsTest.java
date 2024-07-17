@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.analyticsservice;
 
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -18,6 +18,7 @@ public class GetLastNTransactionsTest {
     static void Initializer() {
         usersInitializer();
         bankAccountsInitializer();
+        transactionsInitializer();
     }
     @AfterEach
     void resetBankAccountBalance() {
@@ -26,7 +27,7 @@ public class GetLastNTransactionsTest {
 
     @Test
     void mustSortByLastTransactions() {
-        List<Transaction> sortedLastTransactions = analyticsService.getLastNTransactions(userIvan, 3);
+        List<Transaction> sortedLastTransactions = analyticsService.getLastNTransactions(userIvan, 2);
         assertEquals(THREE_DAYS_AGO, sortedLastTransactions.get(0).getCreatedDate());
         assertEquals(TEN_DAYS_AGO, sortedLastTransactions.get(1).getCreatedDate());
     }

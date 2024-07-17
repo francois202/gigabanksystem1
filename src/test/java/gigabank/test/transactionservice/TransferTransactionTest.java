@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.transactionservice;
 
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -16,6 +16,7 @@ public class TransferTransactionTest {
     static void Initializer() {
         usersInitializer();
         bankAccountsInitializer();
+        transactionsInitializer();
     }
 
     @AfterEach
@@ -73,7 +74,7 @@ public class TransferTransactionTest {
     }
 
     @Test
-    void checkNullInput() {
+    void checkInputNull() {
         boolean successTransfer1 = true;
         boolean successTransfer2 = true;
         boolean successTransfer3 = true;

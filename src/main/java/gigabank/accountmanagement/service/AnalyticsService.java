@@ -7,7 +7,9 @@ import gigabank.accountmanagement.entity.User;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,8 +20,9 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
+     *
      * @param bankAccount - счет
-     * @param category - категория
+     * @param category    - категория
      */
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         BigDecimal sum = BigDecimal.ZERO;
@@ -28,17 +31,15 @@ public class AnalyticsService {
             return sum;
         }
 
-        LocalDateTime today = LocalDateTime.now();
-        LocalDateTime lastMonth = today.minus(1L, ChronoUnit.MONTHS);
+        LocalDateTime lastMonth = LocalDateTime.now().minus(1L, ChronoUnit.MONTHS);
 
-        for (Transaction transaction : bankAccount.getTransactions()) {
-            if (transaction.getCreatedDate().isAfter(lastMonth)
-                    && StringUtils.equals(transaction.getCategory(), category)
-                    && TransactionType.PAYMENT.equals(transaction.getType())) {
+        sum = bankAccount.getTransactions().stream()
+                .filter(t -> t.getCreatedDate().isAfter(lastMonth))
+                .filter(t -> StringUtils.equals(t.getCategory(), category))
+                .filter(t -> TransactionType.PAYMENT.equals(t.getType()))
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                sum = sum.add(transaction.getValue());
-            }
-        }
         return sum;
     }
 
@@ -46,30 +47,32 @@ public class AnalyticsService {
      * Вывод суммы потраченных средств на n категорий за последний месяц
      * со всех счетов пользователя
      *
-     * @param user - пользователь
+     * @param user       - пользователь
      * @param categories - категории
      * @return мапа категория - сумма потраченных средств
      */
-    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories){
+    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> monthlySpendingMap = new HashMap<>();
+
         if (user == null || categories == null) {
             return monthlySpendingMap;
         }
 
-        Set<String> filteredCategories = categories.stream()
+        Set<String> validatedCategories = categories.stream()
                 .filter(c -> TransactionService.TRANSACTION_CATEGORIES.contains(c))
                 .collect(Collectors.toCollection(HashSet::new));
 
-        if (filteredCategories.isEmpty()) {
+        if (validatedCategories.isEmpty()) {
             return monthlySpendingMap;
         }
 
-        LocalDateTime today = LocalDateTime.now();
-        LocalDateTime lastMonth = today.minus(1L, ChronoUnit.MONTHS);
+        LocalDateTime lastMonth = LocalDateTime.now().minus(1L, ChronoUnit.MONTHS);
 
         monthlySpendingMap = user.getBankAccounts().stream()
                 .flatMap(ba -> ba.getTransactions().stream())
-                .filter(t -> t.getCreatedDate().isAfter(lastMonth) && TransactionType.PAYMENT.equals(t.getType()))
+                .filter(t -> t.getCreatedDate().isAfter(lastMonth))
+                .filter(t -> TransactionType.PAYMENT.equals(t.getType()))
+                .filter(t -> TransactionService.TRANSACTION_CATEGORIES.contains(t.getCategory()))
                 .collect(Collectors.toMap(Transaction::getCategory, Transaction::getValue, BigDecimal::add));
 
         return monthlySpendingMap;
@@ -77,52 +80,31 @@ public class AnalyticsService {
 
     /**
      * Вывод платежных операций по всем счетам и по всем категориям от наибольшей к наименьшей
+     *
      * @param user - пользователь
      * @return мапа категория - все операции совершенные по ней
      */
     public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
         LinkedHashMap<String, List<Transaction>> transactionsMap = new LinkedHashMap<>();
-        List<Transaction> transactionsValueDesc = new ArrayList<>();
-        Comparator<Transaction> valueComparator = new TransactionValueComparatorDesc();
 
         if (user == null) {
             return transactionsMap;
         }
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction: bankAccount.getTransactions()) {
-                if (TransactionService.TRANSACTION_CATEGORIES.contains(transaction.getCategory())
-                        && TransactionType.PAYMENT.equals(transaction.getType())) {
+        transactionsMap = user.getBankAccounts().stream()
+                .flatMap(ba -> ba.getTransactions().stream())
+                .filter(t -> TransactionType.PAYMENT.equals(t.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
 
-                    transactionsValueDesc.add(transaction);
-                }
-            }
-        }
-        transactionsValueDesc.sort(valueComparator);
-
-        for (Transaction transaction: transactionsValueDesc) {
-            transactionsMap.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-        }
         return transactionsMap;
-    }
-
-    private static class TransactionValueComparatorDesc implements Comparator<Transaction> {
-        @Override
-        public int compare (Transaction t1, Transaction t2) {
-            if (t1.getValue().compareTo(t2.getValue()) > 0) {
-                return -1;
-            }
-            else if (t1.getValue().compareTo(t2.getValue()) < 0) {
-                return 1;
-            }
-            else { return 0; }
-        }
     }
 
     /**
      * Вывод последних N транзакций
+     *
      * @param user пользователь
-     * @param n количество транзакций
+     * @param n    количество транзакций
      */
     public List<Transaction> getLastNTransactions(User user, int n) {
         List<Transaction> lastTransactions = new ArrayList<>();
@@ -130,50 +112,158 @@ public class AnalyticsService {
             return lastTransactions;
         }
 
-        List<Transaction> allTransactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            allTransactions.addAll(bankAccount.getTransactions());
-        }
+        lastTransactions = user.getBankAccounts().stream()
+                .flatMap(ba -> ba.getTransactions().stream())
+                .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
+                .limit(n)
+                .collect(Collectors.toList());
 
-        allTransactions.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
-        for ( int i = 0; i < Math.min(n, allTransactions.size()); i++) {
-            lastTransactions.add(allTransactions.get(i));
-        }
         return lastTransactions;
     }
 
     /**
      * Вывод топ-N самых больших платежных транзакций пользователя
+     *
      * @param user пользователь
-     * @param n количество транзакций
+     * @param n    количество транзакций
      */
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
-        PriorityQueue<Transaction> topTransactions = new PriorityQueue<>(
-                Comparator.comparing(Transaction::getValue).reversed());
+        PriorityQueue<Transaction> topTransactions = new PriorityQueue<>();
 
         if (user == null || n <= 0) {
             return topTransactions;
         }
 
-        PriorityQueue<Transaction> allTransactions = new PriorityQueue<>(
-                Comparator.comparing(Transaction::getValue).reversed());
+        topTransactions = user.getBankAccounts().stream()
+                .flatMap(ba -> ba.getTransactions().stream())
+                .filter(t -> TransactionType.PAYMENT.equals(t.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .limit(n)
+                .collect(Collectors.toCollection(() -> new PriorityQueue<>(
+                        Comparator.comparing(Transaction::getValue).reversed())));
 
-        for (BankAccount bankAccount : user.getBankAccounts()) {
-            for (Transaction transaction: bankAccount.getTransactions()) {
-                if (TransactionService.TRANSACTION_CATEGORIES.contains(transaction.getCategory())
-                        && TransactionType.PAYMENT.equals(transaction.getType())) {
-
-                    allTransactions.add(transaction);
-                }
-            }
-        }
-
-        int i = 0;
-        int size = allTransactions.size();
-        while (i < Math.min(n, size)) {
-            topTransactions.offer(allTransactions.poll());
-            i++;
-        }
         return topTransactions;
     }
+
+    /*-------------------------------------------------------*/
+
+    /**
+     * Метод для замера времени выполнения для обычных и параллельных стримов
+     *
+     * @param transactions список транзакци
+     * @return возвращает результаты в виде списка
+     */
+    public List<String> analyzePerformance(List<Transaction> transactions) {
+        List<String> totalResult = new ArrayList<>();
+        if (transactions == null) {
+            return totalResult;
+        }
+
+        //----Вывод транзакций c платежом больше $1000----
+        String resultTimeStream = "";
+        LocalTime before = LocalTime.now();
+        List<Transaction> transactionsFilteredAmount = new ArrayList<>(transactions.stream()
+                .filter(t -> t.getValue().compareTo(new BigDecimal("1000.00")) > 0)
+                .toList());
+
+        Duration delta = Duration.between(before, LocalTime.now());
+
+        resultTimeStream = "Фильтруем " + (transactions.size() - 1) +
+                " транзакций и выводим c платежом больше $1000...\n" +
+                "Получено " + (transactionsFilteredAmount.size() - 1) + " транзакций |" +
+                " Время выполнения stream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeStream);
+
+        String resultTimeParallelStream = "";
+        before = LocalTime.now();
+        List<Transaction> transactionsFilteredAmountPar = new ArrayList<>(transactions.parallelStream()
+                .filter(t -> t.getValue().compareTo(new BigDecimal("1000.00")) > 0)
+                .toList());
+
+        delta = Duration.between(before, LocalTime.now());
+
+        resultTimeParallelStream = "Получено " + (transactionsFilteredAmountPar.size() - 1) + " транзакций |" +
+                " Время выполнения parallelStream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeParallelStream);
+
+
+        //---Сортировка транзакций по сумме платежа от наибольшей к меньшей---
+        before = LocalTime.now();
+        List<Transaction> transactionsSortedAmount = new ArrayList<>(transactions.stream()
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .toList());
+        delta = Duration.between(before, LocalTime.now());
+
+        resultTimeStream = "--------------------------------------\n" +
+                "Сортируем " + (transactions.size() - 1) +
+                " транзакций по сумме платежа...\n" +
+                "Осортировано " + (transactionsSortedAmount.size() - 1) + " транзакций |" +
+                " Время выполнения stream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeStream);
+
+        transactionsSortedAmount.clear();
+        before = LocalTime.now();
+        transactionsSortedAmount = new ArrayList<>(transactions.parallelStream()
+                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .toList());
+
+        delta = Duration.between(before, LocalTime.now());
+
+        resultTimeParallelStream = "Осортировано " + (transactionsSortedAmount.size() - 1) + " транзакций |" +
+                " Время выполнения parallelStream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeParallelStream);
+
+
+        //-------Вывод суммы всех транзакций --------
+        before = LocalTime.now();
+        BigDecimal transactionsSum = transactions.stream()
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        delta = Duration.between(before, LocalTime.now());
+
+        resultTimeStream = "--------------------------------------\n" +
+                "Суммируем " + (transactions.size() - 1) + " транзакций...\n" +
+                "Сумма: " + transactionsSum + " | Время выполнения stream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeStream);
+
+        transactionsSum = BigDecimal.ZERO;
+        before = LocalTime.now();
+        transactionsSum = transactions.parallelStream()
+                .map(Transaction::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        delta = Duration.between(before, LocalTime.now());
+
+        resultTimeParallelStream = "Сумма: " + transactionsSum +
+                " | Время выполнения parallelStream(): " + delta.toMillis() + " мс";
+        totalResult.add(resultTimeParallelStream);
+
+        return totalResult;
+    }
+    /*
+     * Результаты работы метода analyzePerformance для теста операций по значениям сумм транзакций:
+     * Время работы обычного и параллельного стримов обозначено как - "220:180 мс"
+     * 220 - обычный, 180 - параллельный
+     * ===================================================================
+     * Количество транзакций -> |  100 000  |  1 000 000  |  10 000 000
+     * -------------------------------------------------------------------
+     * Фильтрация ArrayList     |  14:10 мс |   69:46 мс  |  698:232 мс
+     * Фильтрация LinkedList    |  20:26 мс |  220:180 мс | 1165:2003 мс
+     * -------------------------------------------------------------------
+     * Сортировка ArrayList     |  86:68 мс |  659:272 мс | 6371:1619 мс
+     * Сортировка LinkedList    |  94:76 мс |  798:409 мс | 9202:3930 мс
+     * -------------------------------------------------------------------
+     * Сумма ArrayList          |   6:9 мс  |   46:24 мс  |  386:131 мс
+     * Сумма LinkedList         |   7:9 мс  |   56:201 мс | 2417:867 мс
+     * ===================================================================
+     * Выводы:
+     * 1) Параллельный стрим на длинной дистанции показывает себя более
+     * производительным.
+     * 2) Наиболее затратная операция это сортировка, так как происходит перебор всех элементов.
+     * 3) LinkedList проигрывает по всем показателям в сравнении с ArrayList.
+     * 4) При нахождении суммы всех элементов паралелльный стрим у LinkedList,
+     *    сильно проигрывая на короткой и средней дистанции, кардинально меняет ситуацию
+     *    на длинной дистанции и вырывается далеко вперёд по производительности.
+     * */
 }

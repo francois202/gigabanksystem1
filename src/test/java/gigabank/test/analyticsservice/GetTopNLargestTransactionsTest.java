@@ -1,4 +1,4 @@
-package gigabank.test;
+package gigabank.test.analyticsservice;
 
 import gigabank.accountmanagement.entity.Transaction;
 import org.junit.jupiter.api.AfterEach;
@@ -17,6 +17,7 @@ public class GetTopNLargestTransactionsTest {
     static void Initializer() {
         usersInitializer();
         bankAccountsInitializer();
+        transactionsInitializer();
     }
 
     @AfterEach
@@ -26,7 +27,7 @@ public class GetTopNLargestTransactionsTest {
 
     @Test
     void mustSortByLargestTransactions() {
-        PriorityQueue<Transaction> topTransactions = analyticsService.getTopNLargestTransactions(userIvan, 10);
+        PriorityQueue<Transaction> topTransactions = analyticsService.getTopNLargestTransactions(userIvan, 3);
 
         assertEquals(TWENTY_DOLLARS, topTransactions.poll().getValue());
         assertEquals(FIFTEEN_DOLLARS, topTransactions.poll().getValue());
