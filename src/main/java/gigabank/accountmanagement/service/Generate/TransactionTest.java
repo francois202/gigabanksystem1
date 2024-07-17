@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Random;
 
 @Data
@@ -28,4 +29,16 @@ public class TransactionTest{
         this.category = generateTransactions.generateCategory(TransactionService.transactionCategories);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TransactionTest that = (TransactionTest) o;
+        return Objects.equals(id, that.id) && Objects.equals(value, that.value) && type == that.type && Objects.equals(category, that.category) && Objects.equals(createdDate, that.createdDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, value, type, category, createdDate);
+    }
 }

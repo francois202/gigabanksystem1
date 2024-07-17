@@ -136,48 +136,4 @@ public class AnalyticsService {
         return result;
     }
 
-    /**
-     * Анализ выполнения стримов последовательно и параллельно
-     */
-
-    public void analyzePerformances(LinkedList<TransactionTest> transactions) {
-        long withoutParallel = analyzeWithoutParallel(transactions);
-        long WithParallel = analyzeWithParallel(transactions);
-
-        System.out.println("Program was completed: " + withoutParallel + " without parallel");
-        System.out.println("Program was completed: " + WithParallel + " with parallel");
-    }
-
-    private long analyzeWithoutParallel(LinkedList<TransactionTest> transactions) {
-        BigDecimal result = BigDecimal.ZERO;
-        long start = System.currentTimeMillis();
-
-        result = transactions.stream()
-                .filter(transaction -> transaction.getType().equals(PAYMENT))
-                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
-                .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
-                .map(TransactionTest::getValue)
-                .reduce(result, BigDecimal::add);
-
-        long end = System.currentTimeMillis();
-
-        return end - start;
-    }
-
-    private long analyzeWithParallel(LinkedList<TransactionTest> transactions) {
-        BigDecimal result = BigDecimal.ZERO;
-        long start = System.currentTimeMillis();
-
-        result = transactions.stream()
-                .parallel()
-                .filter(transaction -> transaction.getType().equals(PAYMENT))
-                .filter(transaction -> transaction.getCreatedDate().isAfter(minusMonth))
-                .sorted(Comparator.comparing(TransactionTest::getValue).reversed())
-                .map(TransactionTest::getValue)
-                .reduce(result, BigDecimal::add);
-
-        long end = System.currentTimeMillis();
-
-        return (end - start);
-    }
 }
