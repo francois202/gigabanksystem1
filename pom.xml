@@ -21,6 +21,12 @@
             <version>3.14.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.2</version>
+        </dependency>
+
         <!-- Lombok dependency -->
         <dependency>
             <groupId>org.projectlombok</groupId>
