@@ -4,23 +4,53 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
+import gigabank.accountmanagement.service.notification.NotificationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
+@Service
 public class BankAccountService {
-    private final PaymentGatewayService paymentGatewayService;
-    private final ExternalNotificationService externalNotificationService;
+    private static final Logger logger = Logger.getLogger(BankAccountService.class.getName());
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService) {
+    private final PaymentGatewayService paymentGatewayService;
+    private final NotificationService notificationService;
+
+    @Value("${notification.sender.email}")
+    private String senderEmail;
+
+    @Value("${notification.sender.phone}")
+    private String senderPhone;
+
+    @Autowired
+    public BankAccountService(
+            PaymentGatewayService paymentGatewayService,
+            @Qualifier("emailNotificationService") NotificationService notificationService) {
         this.paymentGatewayService = paymentGatewayService;
-        this.externalNotificationService = externalNotificationService;
+        this.notificationService = notificationService;
+    }
+
+    @PostConstruct
+    public void init() {
+        logger.info("BankAccountService bean is being initialized");
+        logger.info("Configured sender email: " + senderEmail);
+        logger.info("Configured sender phone: " + senderPhone);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        logger.info("BankAccountService bean is being destroyed");
     }
 
     public BankAccount findAccountById(int accountId) {
@@ -31,31 +61,52 @@ public class BankAccountService {
         account.setBalance(account.getBalance().subtract(amount));
     }
 
+    public void withdraw(Integer accountId, BigDecimal amount, String description) {
+        BankAccount account = findAccountById(accountId);
+        account.setBalance(account.getBalance().subtract(amount));
+        // ... создание транзакции ...
+    }
+
+    public void deposit(Integer accountId, BigDecimal amount, String description) {
+        BankAccount account = findAccountById(accountId);
+        account.setBalance(account.getBalance().add(amount));
+        // ... создание транзакции ...
+    }
+
+    public void transfer(Integer fromAccountId, Integer toAccountId,
+                         BigDecimal amount, String description) {
+        withdraw(fromAccountId, amount, "Transfer to " + toAccountId + ": " + description);
+        deposit(toAccountId, amount, "Transfer from " + fromAccountId + ": " + description);
+    }
+
     public void processCardPayment(BankAccount account, BigDecimal amount, String cardNumber, String merchantName) {
         withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed card payment for account " + account.getId());
+        logger.info("Processing card payment for account " + account.getId());
         paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+        notificationService.sendNotification(
+                account.getOwner().getPhoneNumber(),
+                "Произошел платеж по карте на сумму " + amount
+        );
     }
 
     public void processBankTransfer(BankAccount account, BigDecimal amount, String bankName) {
         withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed bank transfer for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+        logger.info("Processing bank transfer for account " + account.getId());
+        paymentGatewayService.authorize("Банковский перевод", amount);
+        notificationService.sendNotification(
+                account.getOwner().getEmail(),
+                "Произошел банковский перевод на сумму " + amount
+        );
     }
 
     public void processWalletPayment(BankAccount account, BigDecimal amount, String walletId) {
         withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed wallet payment for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+        logger.info("Processing wallet payment for account " + account.getId());
+        paymentGatewayService.authorize("Платеж через кошелек", amount);
+        notificationService.sendNotification(
+                account.getOwner().getEmail(),
+                "Произошел платеж через кошелек на сумму " + amount
+        );
     }
 
     public static BankAccount createTestAccount() {

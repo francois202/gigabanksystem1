@@ -6,6 +6,7 @@ import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@Service
 @RequiredArgsConstructor
 public class AnalyticsService {
     private final TransactionService transactionService;

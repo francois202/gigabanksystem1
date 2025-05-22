@@ -2,40 +2,72 @@ package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.dto.UserRequest;
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
 
 import java.util.List;
 
-public class BankManager {
-    private BankAccountService serv = new BankAccountService(null, null); // неправильная инициализация
-    private PaymentGatewayService payService = new PaymentGatewayService();
-    private ExternalNotificationService notifier = new ExternalNotificationService();
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import gigabank.accountmanagement.service.notification.NotificationService;
 
-    public void doWork(List<UserRequest> rqs) {
-        for (UserRequest r : rqs) {
-            BankAccount a = serv.findAccountById(r.getAccountId());
-            if (a == null) {
-                System.out.println("no acc " + r.getAccountId());
+import java.util.logging.Logger;
+
+@Component
+public class BankManager {
+    private static final Logger logger = Logger.getLogger(BankManager.class.getName());
+
+    private final BankAccountService bankAccountService;
+    private final PaymentGatewayService paymentGatewayService;
+    private final NotificationService notificationService;
+
+    @Autowired
+    public BankManager(
+            BankAccountService bankAccountService,
+            PaymentGatewayService paymentGatewayService,
+            @Qualifier("smsNotificationService") NotificationService notificationService) {
+        this.bankAccountService = bankAccountService;
+        this.paymentGatewayService = paymentGatewayService;
+        this.notificationService = notificationService;
+    }
+
+    public void doWork(List<UserRequest> requests) {
+        for (UserRequest request : requests) {
+            BankAccount account = bankAccountService.findAccountById(request.getAccountId());
+
+            if (account == null) {
+                logger.warning("Account not found: " + request.getAccountId());
                 continue;
             }
-            if (r.getPaymentType().equals("CARD")) {
-                payService.authorize("tx", r.getAmount());
-                serv.withdraw(a, r.getAmount());
-                System.out.println("card pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "paid " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "payment", "card pay " + r.getAmount());
-            } else if (r.getPaymentType().equals("BANK")) {
-                payService.authorize("tx", r.getAmount());
-                System.out.println("bank pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "payment bank " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "payment bank", "payment bank " + r.getAmount());
-            } else if (r.getPaymentType().equals("WALLET")) {
-                payService.authorize("tx", r.getAmount());
-                serv.withdraw(a, r.getAmount());
-                System.out.println("wallet pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "wallet " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "wallet", "wallet " + r.getAmount());
-            }
+
+            processPayment(request, account);
         }
+    }
+
+    private void processPayment(UserRequest request, BankAccount account) {
+        paymentGatewayService.authorize("tx", request.getAmount());
+        bankAccountService.withdraw(account, request.getAmount());
+
+        String paymentMessage = String.format("%s payment of %s for account %s",
+                request.getPaymentType(), request.getAmount(), account.getId());
+
+        switch (request.getPaymentType()) {
+            case "CARD":
+                logger.info("Processing card payment: " + paymentMessage);
+                break;
+            case "BANK":
+                logger.info("Processing bank transfer: " + paymentMessage);
+                break;
+            case "WALLET":
+                logger.info("Processing wallet payment: " + paymentMessage);
+                break;
+            default:
+                logger.warning("Unknown payment type: " + request.getPaymentType());
+                return;
+        }
+
+        notificationService.sendNotification(
+                account.getOwner().getPhoneNumber(),
+                String.format("Processed %s payment of %s", request.getPaymentType(), request.getAmount())
+        );
     }
 }

@@ -1,6 +1,9 @@
 package gigabank.accountmanagement.service.notification;
 
+import org.springframework.stereotype.Service;
+
 // Внешний API уведомлений (эмулирует внешний сервис)
+@Service
 public class ExternalNotificationService {
 
     public void sendSms(String phone, String msg) {
