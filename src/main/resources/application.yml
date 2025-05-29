@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/accountmanagement
+    username: postgres
+    password: Dima7Sam
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+
+        #db.url=jdbc:postgresql://localhost:5432/your_name_bd
+        #db.username=your_username
+        #db.password=your_password
+        #db.driver=org.postgresql.Driver
