@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.annotation.LogExecutionTime;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -18,6 +19,7 @@ public class AnalyticsService {
      * @param bankAccount - счет
      * @param category - категория
      */
+    @LogExecutionTime
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category){
         BigDecimal amount = BigDecimal.ZERO;
         if (bankAccount == null || !bankAccount.getTransactions().contains(category))
@@ -74,7 +76,7 @@ public class AnalyticsService {
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType()))
                     result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-                    // transactions.add(transaction);
+//                     transactions.add(transaction);
             }
         }
 
@@ -115,21 +117,20 @@ public class AnalyticsService {
      * @param user - пользователь
      * @param n - кол-во последних транзакций
      */
+    @LogExecutionTime
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n){
-        PriorityQueue<Transaction> result = new PriorityQueue<>();
+        PriorityQueue<Transaction> result = new PriorityQueue<>(
+                Comparator.comparing(Transaction::getValue).reversed()
+        );
 
         if (user == null)
             return result;
-        List<Transaction> allTransaction = new ArrayList<>();
         for (BankAccount bankAccount : user.getBankAccounts()){
+            if (bankAccount != null && bankAccount.getTransactions() != null) {
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType())){
-                    if (result.size() < n)
                         result.offer(transaction);
-                    else if (result.peek() != null
-                            && result.peek().getValue().compareTo(transaction.getValue()) < 0){
-                        result.poll();
-                        result.offer(transaction);
+                    if (result.size() > n)  result.poll();
                     }
                 }
             }
