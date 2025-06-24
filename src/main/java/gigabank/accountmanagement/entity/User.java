@@ -16,4 +16,6 @@ public class User {
     private String lastName;
     private LocalDate birthDate;
     private List<BankAccount> bankAccounts;
+    private String phoneNumber;
+    private String email;
 }
