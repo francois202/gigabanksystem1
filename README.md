@@ -10,45 +10,89 @@ Account Management Service - это бэкенд сервис для управ�
 * Переводы средств в другие банковские системы
 * Предоставление аналитики по тратам
 
--- Создание таблицы users
-CREATE TABLE account_management.users (
-id VARCHAR(36) PRIMARY KEY,
-first_name VARCHAR(50) NOT NULL,
-middle_name VARCHAR(50),
-last_name VARCHAR(50) NOT NULL,
-birth_date DATE NOT NULL,
-email VARCHAR(100) NOT NULL UNIQUE,
-phone_number VARCHAR(20)
-);
+Курлы для проверки авторизации:
 
--- Создание таблицы bank_accounts
-CREATE TABLE account_management.bank_accounts (
-id VARCHAR(36) PRIMARY KEY,
-account_number VARCHAR(20) NOT NULL UNIQUE,
-balance DECIMAL(19, 2) NOT NULL DEFAULT 0,
-currency VARCHAR(3) NOT NULL,
-user_id VARCHAR(36) NOT NULL,
-FOREIGN KEY (user_id) REFERENCES account_management.users(id)
-);
+Basic Auth:
+Запрос защищенный: 
+curl --location 'http://localhost:8080/api/private/hello' \
+--header 'Authorization: Basic YWRtaW46YWRtaW4xMjM=' \
+--header 'Cookie: JSESSIONID=6A7CC069532ED2EA97C2DABA4DF82B9A'
 
--- Создание таблицы transactions
-CREATE TABLE account_management.transactions (
-id VARCHAR(36) PRIMARY KEY,
-amount DECIMAL(19, 2) NOT NULL,
-created_at TIMESTAMP NOT NULL,
-description VARCHAR(255),
-account_id VARCHAR(36) NOT NULL,
-FOREIGN KEY (account_id) REFERENCES account_management.bank_accounts(id)
-);
+Ответы:
+Status: 200 OK
+Body: "Это защищенный endpoint, требуется Basic Auth"
 
-curl для postmen: 
-curl --location 'http://localhost:8080/api/users' \
+или 
+
+Status: 401 Unauthorized
+Headers: WWW-Authenticate: Basic realm="Realm"
+Body: (пустое или стандартное сообщение об ошибке)
+
+-----------------------------------------------
+Form-Based Login:
+Откройте в браузере: http://localhost:8080/login
+
+Введите:
+Логин: admin / Пароль: admin123
+Или: user / user123
+
+После успешного входа попадёте на /dashboard
+
+-----------------------------------------------
+jwt: 
+
+Генерация токена: 
+curl --location 'http://localhost:8080/api/public/token' \
 --header 'Content-Type: application/json' \
---data-raw '{
-"firstName": "Иван",
-"middleName": "Иванович",
-"lastName": "Иванов",
-"birthDate": "1990-05-15",
-"email": "ivanov@example.com",
-"phoneNumber": "+79161234567"
+--header 'Cookie: JSESSIONID=27483B2C6FAAA3F7E06D9CC23C82A3F5' \
+--data '{
+"username": "admin",
+"password": "admin123"
 }'
+
+Проверка запроса по токену, если генерация токена будет не по ключу, в приложении упадет исключение. 
+curl --location 'http://localhost:8080/api/protected-endpoint' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc1MTA1NTgzOSwiZXhwIjoxNzUxMTQyMjM5fQ.getQd9LqZNhR3Dcq7o29fKJJ5lWbd0GGeUlGA5uGFK8' \
+--header 'Cookie: JSESSIONID=28507750E030BB12E8D4ACAE6852B6BB'
+
+Для того чтобы отдавать ответ при получении конкретного токена, нужно проводить сравнение токе из хедера запроса и токена из бд. 
+
+-----------------------------------------------
+OAuth:
+Регистрация OAuth-приложения в GitHub
+1. Перейдите в настройки разработчика:
+
+Войдите в GitHub
+Нажмите на ваш аватар в правом верхнем углу
+Выберите Settings → Developer settings → OAuth Apps
+
+2. Создайте новое приложение:
+
+Нажмите New OAuth App
+
+Заполните форму:
+
+Поле: Значение (для локальной разработки)
+Application name: Gigabank System
+Homepage URL:	http://localhost:8080
+Authorization callback URL:	http://localhost:8080/login/oauth2/code/github
+
+3. Зарегистрируйте приложение:
+Нажмите Register application
+
+2. Получение учетных данных
+   Найдите Client ID и Client Secret:
+
+На странице приложения найдите:
+
+Client ID (показывается сразу)
+Client Secret (нажмите Generate a new client secret)
+
+Добавьте секреты в application.yml
+
+
+4. Проверка работы
+Запустите приложение
+Перейдите по адресу: http://localhost:8080/login
+Нажмите "Login with GitHub"
+Авторизуйтесь через GitHub

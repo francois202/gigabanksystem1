@@ -12,8 +12,16 @@ spring:
       hibernate:
         format_sql: true
 
-
         #db.url=jdbc:postgresql://localhost:5432/your_name_bd
         #db.username=your_username
         #db.password=your_password
         #db.driver=org.postgresql.Driver
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ваш-client-id
+            client-secret: ваш-client-secret
+            scope: user:email
