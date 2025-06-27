@@ -4,6 +4,7 @@ import gigabank.accountmanagement.service.CardPaymentStrategy;
 import gigabank.accountmanagement.service.DigitalWalletPaymentStrategy;
 import gigabank.accountmanagement.service.PaymentGatewayService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -32,55 +33,47 @@ public class PaymentStrategyTest {
     }
 
     @Test
+    @DisplayName("Проверяет уменьшение баланса при оплате картой")
     void testCardPaymentDecreasesBalance() {
-        // Подготовка
         details.put("cardNumber", "1234-5678-9012-3456");
         details.put("merchantName", "Тестовый Продавец");
         CardPaymentStrategy strategy = new CardPaymentStrategy();
 
-        // Действие
         if (paymentGatewayService.processPayment(paymentAmount, details)) {
             strategy.process(bankAccount, paymentAmount, details);
             bankAccount.setBalance(bankAccount.getBalance().subtract(paymentAmount));
         }
-
-        // Проверка
         assertEquals(initialBalance.subtract(paymentAmount), bankAccount.getBalance());
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Card Payment", bankAccount.getTransactions().get(0).getCategory());
     }
 
     @Test
+    @DisplayName("Проверяет уменьшение баланса при банковском переводе")
     void testBankTransferDecreasesBalance() {
-        // Подготовка
         details.put("bankName", "Тестовый Банк");
         BankTransferStrategy strategy = new BankTransferStrategy();
 
-        // Действие
         if (paymentGatewayService.processPayment(paymentAmount, details)) {
             strategy.process(bankAccount, paymentAmount, details);
             bankAccount.setBalance(bankAccount.getBalance().subtract(paymentAmount));
         }
-
-        // Проверка
         assertEquals(initialBalance.subtract(paymentAmount), bankAccount.getBalance());
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Bank Transfer", bankAccount.getTransactions().get(0).getCategory());
     }
 
     @Test
+    @DisplayName("Проверяет уменьшение баланса при оплате через цифровой кошелёк")
     void testDigitalWalletPaymentDecreasesBalance() {
-        // Подготовка
         details.put("digitalWalletId", "wallet123");
         DigitalWalletPaymentStrategy strategy = new DigitalWalletPaymentStrategy();
 
-        // Действие
         if (paymentGatewayService.processPayment(paymentAmount, details)) {
             strategy.process(bankAccount, paymentAmount, details);
             bankAccount.setBalance(bankAccount.getBalance().subtract(paymentAmount));
         }
 
-        // Проверка
         assertEquals(initialBalance.subtract(paymentAmount), bankAccount.getBalance());
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Wallet Payment", bankAccount.getTransactions().get(0).getCategory());

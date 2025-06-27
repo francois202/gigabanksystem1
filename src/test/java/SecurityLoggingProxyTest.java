@@ -4,6 +4,7 @@ import gigabank.accountmanagement.service.*;
 import gigabank.accountmanagement.service.notification.ExternalNotificationAdapter;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -26,20 +27,16 @@ public class SecurityLoggingProxyTest {
 
     @BeforeEach
     void setUp() {
-        // Создаем реальный PaymentGatewayService
         PaymentGatewayService paymentGatewayService = PaymentGatewayService.getInstance();
 
-        // Создаем заглушку для NotificationAdapter
         NotificationAdapter notificationAdapter = new NotificationAdapter() {
             @Override
             public void sendPaymentNotification(User user, String message) {
-                // Пустая реализация для тестов
                 System.out.println("Уведомление отправлено: " + message);
             }
 
             @Override
             public void sendRefundNotification(User user, String message) {
-// Пустая реализация для тестов
             System.out.println("Уведомление отправлено: " + message);
         }
         };
@@ -58,8 +55,9 @@ public class SecurityLoggingProxyTest {
     }
 
     @Test
+    @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
     void testProcessPaymentSucceedsWhenAccessGranted() throws NoSuchFieldException, IllegalAccessException {
-        // Arrange: Устанавливаем Random, который всегда возвращает true
+        // Устанавливаем Random, который всегда возвращает true
         Random fixedRandom = new Random() {
             @Override
             public boolean nextBoolean() {
@@ -68,17 +66,16 @@ public class SecurityLoggingProxyTest {
         };
         setRandomField(securityLoggingProxy, fixedRandom);
 
-        // Act
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
 
-        // Assert
         assertEquals(new BigDecimal("900.00"), bankAccount.getBalance(), "Баланс должен уменьшиться на сумму платежа");
         assertEquals(1, bankAccount.getTransactions().size(), "Необходимо добавить одну транзакцию");
     }
 
     @Test
+    @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
     void testProcessPaymentDoesNotExecuteWhenAccessDenied() throws NoSuchFieldException, IllegalAccessException {
-        // Arrange: Устанавливаем Random, который всегда возвращает false
+        // Устанавливаем Random, который всегда возвращает false
         Random fixedRandom = new Random() {
             @Override
             public boolean nextBoolean() {
@@ -87,14 +84,11 @@ public class SecurityLoggingProxyTest {
         };
         setRandomField(securityLoggingProxy, fixedRandom);
 
-        // Act
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
 
-        // Assert
         assertEquals(new BigDecimal("1000.00"), bankAccount.getBalance(), "Баланс должен оставаться неизменным");
         assertEquals(0, bankAccount.getTransactions().size(), "Никакие транзакции не должны добавляться");
     }
-
     private void setRandomField(SecurityLoggingProxy proxy, Random random) throws NoSuchFieldException, IllegalAccessException {
         Field randomField = SecurityLoggingProxy.class.getDeclaredField("random");
         randomField.setAccessible(true);

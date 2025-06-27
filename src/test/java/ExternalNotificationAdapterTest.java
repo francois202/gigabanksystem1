@@ -3,6 +3,7 @@ import gigabank.accountmanagement.service.notification.ExternalNotificationAdapt
 import gigabank.accountmanagement.service.notification.ExternalNotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -25,47 +26,39 @@ public class ExternalNotificationAdapterTest {
         adapter = new ExternalNotificationAdapter(externalNotificationService);
         user = new User();
         message = "Тестовое уведомление";
-        // Перехват вывода в консоль
         System.setOut(new PrintStream(outContent));
     }
 
     @AfterEach
     void tearDown() {
-        // Восстанавливаем стандартный вывод
         System.setOut(originalOut);
         outContent.reset();
     }
 
     @Test
+    @DisplayName("Проверяет отправку SMS при наличии номера телефона")
     void testSendPaymentNotificationSendsSmsWhenPhoneIsProvided() {
-        // Arrange
         user.setPhoneNumber("1234567890");
         user.setEmail("");
 
-        // Act
         adapter.sendPaymentNotification(user, message);
 
-        // Debug
         System.err.println("Фактический вывод: [" + outContent.toString() + "]");
 
-        // Assert
         String expectedOutput = String.format("Отправка SMS на 1234567890: Тестовое уведомление%s", System.lineSeparator());
         assertEquals(expectedOutput, outContent.toString(), "SMS-сообщение должно быть отправлено с правильным сообщением");
     }
 
     @Test
+    @DisplayName("Проверяет отправку email при наличии адреса электронной почты")
     void testSendPaymentNotificationSendsEmailWhenEmailIsProvided() {
-        // Arrange
         user.setPhoneNumber("");
         user.setEmail("test@example.com");
 
-        // Act
         adapter.sendPaymentNotification(user, message);
 
-        // Debug
         System.err.println("Фактический вывод: [" + outContent.toString() + "]");
 
-        // Assert
         String expectedOutput = String.format("Отправка Email на test@example.com: Уведомление об оплате - Тестовое уведомление%s", System.lineSeparator());
         assertEquals(expectedOutput, outContent.toString(), "Электронное письмо должно быть отправлено с правильной темой и сообщением");
     }

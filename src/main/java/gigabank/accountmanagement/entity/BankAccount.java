@@ -17,7 +17,7 @@ public class BankAccount {
     private String id;
     private BigDecimal balance;
     private User owner;
-    private List<Transaction> transactions = new ArrayList<>();
+    private List<Transaction> transactions;
 
     public BankAccount(String id, List<Transaction> transactions) {
         this.id = id;

@@ -11,7 +11,6 @@ import org.aspectj.lang.annotation.Before;
 
 @Aspect
 public class LoggingAspect {
-    // Хранит время начала для каждого потока
     private static final ThreadLocal<Long> startTime = new ThreadLocal<>();
 
     @Before("@annotation(LogExecutionTime)")

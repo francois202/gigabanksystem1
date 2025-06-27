@@ -6,6 +6,7 @@ import gigabank.accountmanagement.service.AnalyticsService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -36,15 +37,12 @@ public class LogExecutionTimeAnnotationTest {
         // Настройка перехвата System.out
         System.setOut(new PrintStream(outContent));
 
-        // Инициализация сервиса
         TransactionService transactionService = new TransactionService();
         analyticsService = new AnalyticsService(transactionService);
 
-        // Настройка тестовых данных
         user = new User();
         bankAccount = new BankAccount("1", new ArrayList<>());
 
-        // Добавляем транзакции
         bankAccount.getTransactions().add(new Transaction(
                 "1",
                 TEN_DOLLARS,
@@ -83,32 +81,28 @@ public class LogExecutionTimeAnnotationTest {
     }
 
     @Test
+    @DisplayName("Проверяет выполнение метода с аннотацией @LogExecutionTime без ошибок")
     public void testLogExecutionTimeNoErrors() {
-        // Проверяем, что метод с @LogExecutionTime выполняется без исключений
         assertDoesNotThrow(() -> {
             analyticsService.getMonthlySpendingByCategory(bankAccount, BEAUTY_CATEGORY);
         });
 
-        // Проверяем, что лог содержит информацию о времени выполнения
         String logOutput = outContent.toString();
         assertTrue(logOutput.contains("Продолжительность"),
                 "Лог должен содержать информацию о времени выполнения");
     }
 
     @Test
+    @DisplayName("Проверяет поведение метода с аннотацией @LogExecutionTime и корректность результатов")
     public void testLogExecutionTimeBehaviorUnchanged() {
-        // Вызываем метод с @LogExecutionTime
         BigDecimal result = analyticsService.getMonthlySpendingByCategory(bankAccount, BEAUTY_CATEGORY);
 
-        // Проверяем, что метод возвращает ожидаемый результат
         assertEquals(TEN_DOLLARS, result, "Сумма расходов по категории 'Beauty' должна быть 10.00");
 
-        // Проверяем, что лог содержит информацию о времени выполнения
         String logOutput = outContent.toString();
         assertTrue(logOutput.contains("Продолжительность"),
                 "Лог должен содержать информацию о времени выполнения");
 
-        // Дополнительно проверяем для другой категории
         BigDecimal foodResult = analyticsService.getMonthlySpendingByCategory(bankAccount, FOOD_CATEGORY);
         assertEquals(TWENTY_DOLLARS, foodResult, "Сумма расходов по категории 'Food' должна быть 20.00");
     }

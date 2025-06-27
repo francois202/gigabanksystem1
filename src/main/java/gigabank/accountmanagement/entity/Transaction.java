@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Setter
-public class    Transaction {
+public class Transaction {
     private String id;
     private BigDecimal value;
     private TransactionType type;

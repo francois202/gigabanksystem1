@@ -15,37 +15,11 @@ public class ExternalNotificationAdapter implements NotificationAdapter {
 
     @Override
     public void sendPaymentNotification(User user, String message) {
-        if (user == null || message == null) {
-            return;
-        }
-
-        String phone = user.getPhoneNumber();
-        String email = user.getEmail();
-        String subject = "Уведомление об оплате";
-
-        if (phone != null && !phone.isEmpty()) {
-            externalNotificationService.sendSms(phone, message);
-        }
-        if (email != null && !email.isEmpty()) {
-            externalNotificationService.sendEmail(email, subject, message);
-        }
+            externalNotificationService.sendNotification(user, message, "Уведомление об оплате");
     }
 
     @Override
     public void sendRefundNotification(User user, String message) {
-        if (user == null || message == null) {
-            return;
-        }
-
-        String phone = user.getPhoneNumber();
-        String email = user.getEmail();
-        String subject = "Уведомление о возврате средств";
-
-        if (phone != null && !phone.isEmpty()) {
-            externalNotificationService.sendSms(phone, message);
-        }
-        if (email != null && !email.isEmpty()) {
-            externalNotificationService.sendEmail(email, subject, message);
-        }
+        externalNotificationService.sendNotification(user, message, "Уведомление о возврате средств");
     }
 }

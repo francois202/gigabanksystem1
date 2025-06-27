@@ -6,9 +6,7 @@ import java.util.Map;
 public class PaymentGatewayService {
     private static volatile PaymentGatewayService instance;
 
-    // Приватный конструктор для предотвращения создания экземпляров
     private PaymentGatewayService() {
-        // Симуляция долгого создания соединения
         try {
             System.out.println("Установление соединения с внешним платежным шлюзом...");
             Thread.sleep(2000); // Имитация задержки
@@ -17,12 +15,10 @@ public class PaymentGatewayService {
             System.out.println("Не удалось установить соединение");
             Thread.currentThread().interrupt();
         }
-        // Защита от создания через рефлексию
         if (instance != null) {
             throw new RuntimeException("Используйте getInstance(), чтобы получить единственный экземпляр этого класса.");
         }
     }
-
     public static PaymentGatewayService getInstance() {
         if (instance == null) {
             synchronized (PaymentGatewayService.class) {

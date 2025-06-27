@@ -29,11 +29,6 @@ public class AnalyticsService {
         BigDecimal amount = BigDecimal.ZERO;
         if (bankAccount == null || StringUtils.isBlank(category)) {
             return amount;
-        } // Проверка, есть ли транзакции с указанной категорией
-        boolean hasCategory = bankAccount.getTransactions().stream()
-                .anyMatch(transaction -> category.equals(transaction.getCategory()));
-        if (!hasCategory) {
-            return amount;
         }
 
         LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
@@ -138,12 +133,14 @@ public class AnalyticsService {
             return result;
         for (BankAccount bankAccount : user.getBankAccounts()){
             if (bankAccount != null && bankAccount.getTransactions() != null) {
-            for (Transaction transaction : bankAccount.getTransactions()){
-                if (TransactionType.PAYMENT.equals(transaction.getType())){
-                        result.offer(transaction);
-                    if (result.size() > n)  result.poll();
+            for (Transaction transaction : bankAccount.getTransactions()) {
+                if (TransactionType.PAYMENT.equals(transaction.getType())) {
+                    result.offer(transaction);
+                    while (result.size() > n) {
+                        result.poll();
                     }
                 }
+            }
             }
         }
         return result;

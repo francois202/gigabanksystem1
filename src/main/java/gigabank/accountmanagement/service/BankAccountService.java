@@ -29,32 +29,25 @@ public class BankAccountService {
         this.userBankAccounts = new HashMap<>();
     }
 
-
     public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
         if (bankAccount == null || value == null || value.compareTo(BigDecimal.ZERO) <= 0 || strategy == null) {
             throw new IllegalArgumentException("Некорректные параметры платежа");
         }
 
-        // Обрабатываем платеж через PaymentGatewayService
         boolean success = paymentGatewayService.processPayment(value, details);
-        if (success) {
-            // Уменьшаем баланс счета
-            bankAccount.setBalance(bankAccount.getBalance().subtract(value));
-
-            // Создаем транзакцию с помощью стратегии
-            strategy.process(bankAccount, value, details);
-
-            // Отправляем уведомление пользователю
-            User user = bankAccount.getOwner();
-            String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s", value, details.getOrDefault("category", "Не указана"));
-            notificationAdapter.sendPaymentNotification(user, message);
-
-            System.out.println("Платеж на сумму " + value + " успешно обработан для счета: " + bankAccount.getId());
-        } else {
-            throw new RuntimeException("Не удалось обработать платеж");
+        if (!success) {
+            throw new RuntimeException("Не удалось обработать платеж: проверьте детали транзакции - " + details);
         }
+
+        bankAccount.setBalance(bankAccount.getBalance().subtract(value));
+        strategy.process(bankAccount, value, details);
+        User user = bankAccount.getOwner();
+        String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s", value, details.getOrDefault("category", "Не указана"));
+        notificationAdapter.sendPaymentNotification(user, message);
+        System.out.println("Платеж на сумму " + value + " успешно обработан для счета: " + bankAccount.getId());
     }
 }
+
 
 
 

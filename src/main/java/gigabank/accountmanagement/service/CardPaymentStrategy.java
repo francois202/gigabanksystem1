@@ -10,12 +10,14 @@ import java.util.Map;
 import java.util.UUID;
 
 public class CardPaymentStrategy implements PaymentStrategy {
+    private static final String CARD_NUMBER_KEY = "cardNumber";
+    private static final String MERCHANT_NAME_KEY = "merchantName";
 
     @Override
     public void process(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
         String id = UUID.randomUUID().toString();
-        String cardNumber = details.get("cardNumber");
-        String merchantName = details.get("merchantName");
+        String cardNumber = details.get(CARD_NUMBER_KEY);
+        String merchantName = details.get(MERCHANT_NAME_KEY);
 
         Transaction transaction = Transaction.builder()
                 .id(id)

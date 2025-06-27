@@ -5,6 +5,7 @@ import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.AnalyticsService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -100,12 +101,14 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет ежемесячные расходы по категории Beauty для существующего счета")
     public void get_monthly_spending_by_category() {
         BigDecimal result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
-        assertEquals(BigDecimal.ZERO, result);
+        assertEquals(TEN_DOLLARS, result);
     }
 
     @Test
+    @DisplayName("Проверяет обработку некорректных входных данных для ежемесячных расходов")
     public void get_monthly_spending_by_category_invalid_input() {
         // Счет равен null
         BigDecimal result = analyticsService.getMonthlySpendingByCategory(null, BEAUTY_CATEGORY);
@@ -135,6 +138,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет историю транзакций пользователя, отсортированных по сумме")
     public void get_transaction_history_sorted_by_amount() {
         LinkedHashMap<String, List<Transaction>> result = analyticsService.getTransactionHistorySortedByAmount(user);
         assertNotNull(result);
@@ -148,6 +152,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет обработку некорректных входных данных для истории транзакций")
     public void get_transaction_history_sorted_by_amount_invalid_input() {
         // Пользователь равен null
         LinkedHashMap<String, List<Transaction>> result = analyticsService.getTransactionHistorySortedByAmount(null);
@@ -175,6 +180,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет получение последних 2 транзакций для пользователя")
     public void get_last_n_transactions() {
         List<Transaction> result = analyticsService.getLastNTransaction(user, 2);
         assertEquals(2, result.size());
@@ -183,6 +189,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет обработку некорректных входных данных для получения последних транзакций")
     public void get_last_n_transactions_invalid_input() {
         List<Transaction> result = analyticsService.getLastNTransaction(null, 2);
         assertTrue(result.isEmpty());
@@ -194,6 +201,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет получение 2 наибольших транзакций для пользователя")
     public void get_top_n_largest_transactions() {
         PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(user, 2);
         assertEquals(2, result.size());
@@ -206,6 +214,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Проверяет обработку некорректных входных данных для получения наибольших транзакций")
     public void get_top_n_largest_transactions_invalid_input() {
         // Пользователь равен null
         PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(null, 2);
@@ -233,6 +242,7 @@ public class AnalyticsServiceTest {
     }
 
     @Test
+    @DisplayName("Сравнивает производительность последовательного и параллельного стримов")
     public void analyze_performance() {
 
         List<Transaction> transactions = user.getBankAccounts().stream()

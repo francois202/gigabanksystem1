@@ -2,6 +2,7 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionBuilder;
 import gigabank.accountmanagement.entity.TransactionType;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -24,8 +25,8 @@ public class TransactionBuilderTest {
     private static final String DIGITAL_WALLET_ID = "wallet123";
 
     @Test
+    @DisplayName("Проверяет создание транзакции только с обязательными полями")
     public void testBuildTransactionWithRequiredFieldsOnly() {
-        // Создаём Transaction только с обязательными полями
         Transaction transaction = Transaction.builder()
                 .id(ID)
                 .value(VALUE)
@@ -35,7 +36,6 @@ public class TransactionBuilderTest {
                 .createdDate(CREATED_DATE)
                 .build();
 
-        // Проверяем, что обязательные поля установлены корректно
         assertEquals(ID, transaction.getId(), "ID должен быть установлен");
         assertEquals(VALUE, transaction.getValue(), "Value должен быть установлен");
         assertEquals(TYPE, transaction.getType(), "Type должен быть установлен");
@@ -43,7 +43,6 @@ public class TransactionBuilderTest {
         assertEquals(BANK_ACCOUNT, transaction.getBankAccount(), "BankAccount должен быть установлен");
         assertEquals(CREATED_DATE, transaction.getCreatedDate(), "CreatedDate должен быть установлен");
 
-        // Проверяем, что необязательные поля равны null
         assertNull(transaction.getMerchantName(), "MerchantName должен быть null");
         assertNull(transaction.getMerchantCategoryCode(), "MerchantCategoryCode должен быть null");
         assertNull(transaction.getCardNumber(), "CardNumber должен быть null");
@@ -52,8 +51,8 @@ public class TransactionBuilderTest {
     }
 
     @Test
+    @DisplayName("Проверяет создание транзакции со всеми полями")
     public void testBuildTransactionWithAllFields() {
-        // Создаём Transaction со всеми полями
         Transaction transaction = Transaction.builder()
                 .id(ID)
                 .value(VALUE)
@@ -68,7 +67,6 @@ public class TransactionBuilderTest {
                 .digitalWalletId(DIGITAL_WALLET_ID)
                 .build();
 
-        // Проверяем, что все поля установлены корректно
         assertEquals(ID, transaction.getId(), "ID должен быть установлен");
         assertEquals(VALUE, transaction.getValue(), "Value должен быть установлен");
         assertEquals(TYPE, transaction.getType(), "Type должен быть установлен");
@@ -83,8 +81,8 @@ public class TransactionBuilderTest {
     }
 
     @Test
+    @DisplayName("Проверяет создание транзакции с обязательными и одним необязательным полем")
     public void testBuildTransactionWithOptionalFieldsNull() {
-        // Создаём Transaction с обязательными полями и одним необязательным полем
         Transaction transaction = Transaction.builder()
                 .id(ID)
                 .value(VALUE)
@@ -95,7 +93,6 @@ public class TransactionBuilderTest {
                 .merchantName(MERCHANT_NAME)
                 .build();
 
-        // Проверяем обязательные поля
         assertEquals(ID, transaction.getId(), "ID должен быть установлен");
         assertEquals(VALUE, transaction.getValue(), "Value должен быть установлен");
         assertEquals(TYPE, transaction.getType(), "Type должен быть установлен");
@@ -103,7 +100,6 @@ public class TransactionBuilderTest {
         assertEquals(BANK_ACCOUNT, transaction.getBankAccount(), "BankAccount должен быть установлен");
         assertEquals(CREATED_DATE, transaction.getCreatedDate(), "CreatedDate должен быть установлен");
 
-        // Проверяем, что merchantName установлен, а остальные необязательные поля null
         assertEquals(MERCHANT_NAME, transaction.getMerchantName(), "MerchantName должен быть установлен");
         assertNull(transaction.getMerchantCategoryCode(), "MerchantCategoryCode должен быть null");
         assertNull(transaction.getCardNumber(), "CardNumber должен быть null");
