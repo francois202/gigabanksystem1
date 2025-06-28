@@ -1,27 +1,41 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.annotation.LogExecutionTime;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@RequiredArgsConstructor
 public class AnalyticsService {
+    private final TransactionService transactionService;
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
      * @param bankAccount - счет
      * @param category - категория
      */
+    @LogExecutionTime
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category){
         BigDecimal amount = BigDecimal.ZERO;
-        if (bankAccount == null || !bankAccount.getTransactions().contains(category))
+        if (bankAccount == null || StringUtils.isBlank(category)) {
             return amount;
+        } // Проверка, есть ли транзакции с указанной категорией
+        boolean hasCategory = bankAccount.getTransactions().stream()
+                .anyMatch(transaction -> category.equals(transaction.getCategory()));
+        if (!hasCategory) {
+            return amount;
+        }
+
         LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
         for (Transaction transaction : bankAccount.getTransactions()) {
             if (TransactionType.PAYMENT.equals(transaction.getType())
@@ -74,7 +88,7 @@ public class AnalyticsService {
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType()))
                     result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-                    // transactions.add(transaction);
+//                     transactions.add(transaction);
             }
         }
 
@@ -101,7 +115,7 @@ public class AnalyticsService {
         for (BankAccount bankAccount : user.getBankAccounts()){
             allTransaction.addAll(bankAccount.getTransactions());
         }
-        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate));
+        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
 
         for (int i = 0; i < Math.min(n, allTransaction.size()); i++) {
             result.add(allTransaction.get(i));
@@ -115,28 +129,23 @@ public class AnalyticsService {
      * @param user - пользователь
      * @param n - кол-во последних транзакций
      */
+    @LogExecutionTime
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n){
-        PriorityQueue<Transaction> result = new PriorityQueue<>();
-
+        PriorityQueue<Transaction> result = new PriorityQueue<>(
+                Comparator.comparing(Transaction::getValue)
+        );
         if (user == null)
             return result;
-        List<Transaction> allTransaction = new ArrayList<>();
         for (BankAccount bankAccount : user.getBankAccounts()){
+            if (bankAccount != null && bankAccount.getTransactions() != null) {
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType())){
-                    if (result.size() < n)
                         result.offer(transaction);
-                    else if (result.peek() != null
-                            && result.peek().getValue().compareTo(transaction.getValue()) < 0){
-                        result.poll();
-                        result.offer(transaction);
+                    if (result.size() > n)  result.poll();
                     }
                 }
             }
         }
-
         return result;
     }
-
-
 }
