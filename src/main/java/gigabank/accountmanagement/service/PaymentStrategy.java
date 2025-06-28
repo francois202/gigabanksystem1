@@ -6,5 +6,5 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 public interface PaymentStrategy {
-    void process(BankAccount bankAccount, BigDecimal value, Map<String,String> details);
+    void process(BankAccount bankAccount,BigDecimal value,Map<String,String> details);
 }

@@ -23,18 +23,18 @@ public class BankAccountService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, NotificationAdapter notificationAdapter) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService,NotificationAdapter notificationAdapter) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
         this.userBankAccounts = new HashMap<>();
     }
 
-    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
+    public void processPayment(BankAccount bankAccount,BigDecimal value,PaymentStrategy strategy,Map<String,String> details) {
         if (bankAccount == null || value == null || value.compareTo(BigDecimal.ZERO) <= 0 || strategy == null) {
             throw new IllegalArgumentException("Некорректные параметры платежа");
         }
 
-        boolean success = paymentGatewayService.processPayment(value, details);
+        boolean success = paymentGatewayService.processPayment(value,details);
         if (!success) {
             throw new RuntimeException("Не удалось обработать платеж: проверьте детали транзакции - " + details);
         }
@@ -42,7 +42,7 @@ public class BankAccountService {
         bankAccount.setBalance(bankAccount.getBalance().subtract(value));
         strategy.process(bankAccount, value, details);
         User user = bankAccount.getOwner();
-        String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s", value, details.getOrDefault("category", "Не указана"));
+        String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s",value,details.getOrDefault("category", "Не указана"));
         notificationAdapter.sendPaymentNotification(user, message);
         System.out.println("Платеж на сумму " + value + " успешно обработан для счета: " + bankAccount.getId());
     }

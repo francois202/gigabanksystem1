@@ -16,63 +16,63 @@ public class TransactionBuilder {
     private String bankName;
     private String digitalWalletId;
 
-    public TransactionBuilder id(String id) {
+    public synchronized TransactionBuilder id(String id) {
         this.id = id;
         return this;
     }
 
-    public TransactionBuilder value(BigDecimal value) {
+    public synchronized TransactionBuilder value(BigDecimal value) {
         this.value = value;
         return this;
     }
 
-    public TransactionBuilder type(TransactionType type) {
+    public synchronized TransactionBuilder type(TransactionType type) {
         this.type = type;
         return this;
     }
 
-    public TransactionBuilder category(String category) {
+    public synchronized TransactionBuilder category(String category) {
         this.category = category;
         return this;
     }
 
-    public TransactionBuilder bankAccount(BankAccount bankAccount) {
+    public synchronized TransactionBuilder bankAccount(BankAccount bankAccount) {
         this.bankAccount = bankAccount;
         return this;
     }
 
-    public TransactionBuilder createdDate(LocalDateTime createdDate) {
+    public synchronized TransactionBuilder createdDate(LocalDateTime createdDate) {
         this.createdDate = createdDate;
         return this;
     }
 
-    public TransactionBuilder merchantName(String merchantName) {
+    public synchronized TransactionBuilder merchantName(String merchantName) {
         this.merchantName = merchantName;
         return this;
     }
 
-    public TransactionBuilder merchantCategoryCode(String merchantCategoryCode) {
+    public synchronized TransactionBuilder merchantCategoryCode(String merchantCategoryCode) {
         this.merchantCategoryCode = merchantCategoryCode;
         return this;
     }
 
-    public TransactionBuilder cardNumber(String cardNumber) {
+    public synchronized TransactionBuilder cardNumber(String cardNumber) {
         this.cardNumber = cardNumber;
         return this;
     }
 
-    public TransactionBuilder bankName(String bankName) {
+    public synchronized TransactionBuilder bankName(String bankName) {
         this.bankName = bankName;
         return this;
     }
 
-    public TransactionBuilder digitalWalletId(String digitalWalletId) {
+    public synchronized TransactionBuilder digitalWalletId(String digitalWalletId) {
         this.digitalWalletId = digitalWalletId;
         return this;
     }
 
 
-    public Transaction build() {
+    public synchronized Transaction build() {
         return new Transaction(id, value, type, category, bankAccount, createdDate, merchantName, merchantCategoryCode, cardNumber, bankName, digitalWalletId);
 
     }

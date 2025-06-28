@@ -19,12 +19,12 @@ public class RefundService {
     private final NotificationAdapter notificationAdapter;
     private final PaymentGatewayService paymentGatewayService;
 
-    public RefundService(PaymentGatewayService paymentGatewayService, NotificationAdapter notificationAdapter) {
+    public RefundService(PaymentGatewayService paymentGatewayService,NotificationAdapter notificationAdapter) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
     }
 
-    public void processRefund(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
+    public void processRefund(BankAccount bankAccount,BigDecimal value,Map<String,String> details) {
         boolean success = paymentGatewayService.processRefund(value, details);
         if (success) {
             String id = UUID.randomUUID().toString();

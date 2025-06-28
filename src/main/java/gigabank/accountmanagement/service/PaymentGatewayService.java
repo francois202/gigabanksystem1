@@ -15,9 +15,6 @@ public class PaymentGatewayService {
             System.out.println("Не удалось установить соединение");
             Thread.currentThread().interrupt();
         }
-        if (instance != null) {
-            throw new RuntimeException("Используйте getInstance(), чтобы получить единственный экземпляр этого класса.");
-        }
     }
     public static PaymentGatewayService getInstance() {
         if (instance == null) {
@@ -36,7 +33,7 @@ public class PaymentGatewayService {
      * @param details Детали транзакции (например, номер карты, имя банка)
      * @return true, если списание успешно
      */
-    public boolean processPayment(BigDecimal value, Map<String, String> details) {
+    public boolean processPayment(BigDecimal value,Map<String,String> details) {
         System.out.println("Обработка платежа: "+ value +" с указанием реквизитов: " + details);
         // Симуляция обработки платежа
         return true;
@@ -48,7 +45,7 @@ public class PaymentGatewayService {
      * @param details Детали транзакции
      * @return true, если возврат успешен
      */
-    public boolean processRefund(BigDecimal value, Map<String, String> details) {
+    public boolean processRefund(BigDecimal value,Map<String,String> details) {
         System.out.println("Обработка возврата средств: "+ value +" с указанием подробной информации: " + details);
         // Симуляция возврата
         return true;

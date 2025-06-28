@@ -31,17 +31,17 @@ public class SecurityLoggingProxyTest {
 
         NotificationAdapter notificationAdapter = new NotificationAdapter() {
             @Override
-            public void sendPaymentNotification(User user, String message) {
+            public void sendPaymentNotification(User user,String message) {
                 System.out.println("Уведомление отправлено: " + message);
             }
 
             @Override
-            public void sendRefundNotification(User user, String message) {
+            public void sendRefundNotification(User user,String message) {
             System.out.println("Уведомление отправлено: " + message);
         }
         };
 
-        bankAccountService = new BankAccountService(paymentGatewayService, notificationAdapter); {
+        bankAccountService = new BankAccountService(paymentGatewayService,notificationAdapter); {
 
         };
         securityLoggingProxy = new SecurityLoggingProxy(bankAccountService);
@@ -56,7 +56,7 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
-    void testProcessPaymentSucceedsWhenAccessGranted() throws NoSuchFieldException, IllegalAccessException {
+    void testProcessPaymentSucceedsWhenAccessGranted() throws NoSuchFieldException,IllegalAccessException {
         // Устанавливаем Random, который всегда возвращает true
         Random fixedRandom = new Random() {
             @Override
@@ -74,7 +74,7 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
-    void testProcessPaymentDoesNotExecuteWhenAccessDenied() throws NoSuchFieldException, IllegalAccessException {
+    void testProcessPaymentDoesNotExecuteWhenAccessDenied() throws NoSuchFieldException,IllegalAccessException {
         // Устанавливаем Random, который всегда возвращает false
         Random fixedRandom = new Random() {
             @Override

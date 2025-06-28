@@ -23,7 +23,7 @@ public class Main {
             NotificationAdapter notificationAdapter = new ExternalNotificationAdapter(externalNotificationService);
 
             // Создаем сервис
-            BankAccountService bankAccountService = new BankAccountService(paymentGatewayService, notificationAdapter);
+            BankAccountService bankAccountService = new BankAccountService(paymentGatewayService,notificationAdapter);
 
             // Создаем тестовые данные
             User user = new User();
@@ -40,7 +40,7 @@ public class Main {
             details.put("cardNumber", "1234-5678-9012-3456");
             details.put("merchantName", "OnlineStore");
             details.put("category", "Shopping");
-            bankAccountService.processPayment(account, new BigDecimal("100.00"), new CardPaymentStrategy(), details);
+            bankAccountService.processPayment(account,new BigDecimal("100.00"),new CardPaymentStrategy(),details);
 
         } catch (Exception e) {
             System.out.println("Ошибка: " + e.getMessage());

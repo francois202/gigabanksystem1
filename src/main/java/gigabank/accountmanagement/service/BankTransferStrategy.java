@@ -12,7 +12,7 @@ import java.util.UUID;
 public class BankTransferStrategy implements PaymentStrategy {
 
     @Override
-    public void process(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
+    public void process(BankAccount bankAccount,BigDecimal value,Map<String,String> details) {
         String id = UUID.randomUUID().toString();
         String bankName = details.get("bankName");
 

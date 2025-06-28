@@ -10,8 +10,14 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
@@ -25,7 +31,7 @@ public class AnalyticsService {
      * @param category - категория
      */
     @LogExecutionTime
-    public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category){
+    public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount,String category){
         BigDecimal amount = BigDecimal.ZERO;
         if (bankAccount == null || StringUtils.isBlank(category)) {
             return amount;
@@ -50,7 +56,7 @@ public class AnalyticsService {
      * @param categories - категории
      * @return мапа категория - сумма потраченных средств
      */
-    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories){
+    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user,Set<String> categories){
         Map<String, BigDecimal> result = new HashMap<>();
         Set<String> validCategories = new TransactionService().validateCategories(categories);
         if (user == null || validCategories.isEmpty())
@@ -100,7 +106,7 @@ public class AnalyticsService {
      * @param user - пользователь
      * @param n - кол-во последних транзакций
      */
-    public List<Transaction> getLastNTransaction(User user, int n){
+    public List<Transaction> getLastNTransaction(User user,int n){
         List<Transaction> allTransaction = new ArrayList<>();
         List<Transaction> result = new ArrayList<>();
 
@@ -125,7 +131,7 @@ public class AnalyticsService {
      * @param n - кол-во последних транзакций
      */
     @LogExecutionTime
-    public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n){
+    public PriorityQueue<Transaction> getTopNLargestTransactions(User user,int n){
         PriorityQueue<Transaction> result = new PriorityQueue<>(
                 Comparator.comparing(Transaction::getValue)
         );

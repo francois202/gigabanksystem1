@@ -14,7 +14,7 @@ public class CardPaymentStrategy implements PaymentStrategy {
     private static final String MERCHANT_NAME_KEY = "merchantName";
 
     @Override
-    public void process(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
+    public void process(BankAccount bankAccount,BigDecimal value,Map<String,String> details) {
         String id = UUID.randomUUID().toString();
         String cardNumber = details.get(CARD_NUMBER_KEY);
         String merchantName = details.get(MERCHANT_NAME_KEY);
