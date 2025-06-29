@@ -27,7 +27,7 @@ public class LoggingAspect {
         if (start != null) {
             long duration = System.currentTimeMillis() - start;
             System.out.println("Продолжительность: " + duration + " мс");
-            startTime.remove(); // Очищаем ThreadLocal после использования
+            startTime.remove();
         }
     }
 }
