@@ -7,6 +7,6 @@ import gigabank.accountmanagement.entity.User;
  */
 
 public interface NotificationAdapter {
-    void sendPaymentNotification(User user, String message);
-    void sendRefundNotification(User user, String message);
+    void sendPaymentNotification(User user,String message);
+    void sendRefundNotification(User user,String message);
 }

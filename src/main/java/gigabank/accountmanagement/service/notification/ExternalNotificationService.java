@@ -8,11 +8,11 @@ import gigabank.accountmanagement.entity.User;
  */
 public class ExternalNotificationService {
 
-    public void sendSms(String phone, String msg) {
+    public void sendSms(String phone,String msg) {
         System.out.println("Отправка SMS на " + phone + ": " + msg);
     }
 
-    public void sendEmail(String email, String subject, String body) {
+    public void sendEmail(String email,String subject, String body) {
         System.out.println("Отправка Email на " + email + ": " + subject + " - " + body);
     }
 
@@ -23,7 +23,7 @@ public class ExternalNotificationService {
      * @param message Текст сообщения.
      * @param subject Тема сообщения (для email).
      */
-    public void sendNotification(User user, String message, String subject) {
+    public void sendNotification(User user,String message,String subject) {
         if (user == null || message == null) {
             return;
         }

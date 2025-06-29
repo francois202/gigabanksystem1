@@ -14,12 +14,12 @@ public class ExternalNotificationAdapter implements NotificationAdapter {
     }
 
     @Override
-    public void sendPaymentNotification(User user, String message) {
+    public void sendPaymentNotification(User user,String message) {
             externalNotificationService.sendNotification(user, message, "Уведомление об оплате");
     }
 
     @Override
-    public void sendRefundNotification(User user, String message) {
+    public void sendRefundNotification(User user,String message) {
         externalNotificationService.sendNotification(user, message, "Уведомление о возврате средств");
     }
 }

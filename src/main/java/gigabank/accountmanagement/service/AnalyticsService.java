@@ -71,7 +71,6 @@ public class AnalyticsService {
                 }
             }
         }
-
         return result;
     }
 
@@ -100,7 +99,6 @@ public class AnalyticsService {
 
         return result;
     }
-
     /**
      *  Вывод последних N транзакций пользователя
      * @param user - пользователь
@@ -126,7 +124,7 @@ public class AnalyticsService {
     }
 
     /**
-     * Вывод топ-N самых больших платежных  транзакций пользователя
+     * Вывод топ-N самых больших платежных транзакций пользователя
      * @param user - пользователь
      * @param n - кол-во последних транзакций
      */

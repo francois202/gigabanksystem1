@@ -26,7 +26,6 @@ public class PaymentGatewayService {
         }
         return instance;
     }
-
     /**
      * Выполняет списание средств через внешний платежный шлюз.
      * @param value Сумма для списания
@@ -38,7 +37,6 @@ public class PaymentGatewayService {
         // Симуляция обработки платежа
         return true;
     }
-
     /**
      * Выполняет возврат средств через внешний платежный шлюз.
      * @param value Сумма для возврата

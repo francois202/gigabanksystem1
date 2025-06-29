@@ -25,7 +25,7 @@ public class Transaction {
     private String bankName;
     private String digitalWalletId;
 
-    public Transaction(String id, BigDecimal value, TransactionType type, String category, BankAccount bankAccount, LocalDateTime createdDate, String merchantName, String merchantCategoryCode, String cardNumber, String bankName, String digitalWalletId) {
+    public Transaction(String id,BigDecimal value,TransactionType type,String category,BankAccount bankAccount,LocalDateTime createdDate,String merchantName,String merchantCategoryCode,String cardNumber,String bankName,String digitalWalletId) {
         this.id = id;
         this.value = value;
         this.type = type;
@@ -55,9 +55,7 @@ public class Transaction {
                 ", digitalWalletId='" + digitalWalletId + '\'' +
                 '}';
     }
-    public static TransactionBuilder builder() {
-        return new TransactionBuilder();
-    }
+    public static TransactionBuilder builder() {return new TransactionBuilder();}
 }
 
 
