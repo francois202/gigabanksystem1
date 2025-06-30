@@ -6,7 +6,7 @@ import java.util.Map;
 public class PaymentGatewayService {
     private static volatile PaymentGatewayService instance;
 
-    private PaymentGatewayService() {
+    PaymentGatewayService() {
         try {
             System.out.println("Установление соединения с внешним платежным шлюзом...");
             Thread.sleep(2000); // Имитация задержки

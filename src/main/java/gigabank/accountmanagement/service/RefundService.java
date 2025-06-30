@@ -20,7 +20,7 @@ public class RefundService {
     private final PaymentGatewayService paymentGatewayService;
 
     public RefundService(PaymentGatewayService paymentGatewayService,NotificationAdapter notificationAdapter) {
-        this.paymentGatewayService = paymentGatewayService;
+        this.paymentGatewayService = paymentGatewayService.getInstance();
         this.notificationAdapter = notificationAdapter;
     }
 

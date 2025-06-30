@@ -1,12 +1,12 @@
 package gigabank.accountmanagement;
 
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.*;
 import gigabank.accountmanagement.service.notification.ExternalNotificationAdapter;
 import gigabank.accountmanagement.service.notification.ExternalNotificationService;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import gigabank.accountmanagement.service.paymentstrategy.CardPaymentStrategy;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

@@ -24,16 +24,16 @@ public class ExternalNotificationService {
      * @param subject Тема сообщения (для email).
      */
     public void sendNotification(User user,String message,String subject) {
-        if (user == null || message == null) {
+        if (user == null || message == null || subject == null) {
             return;
         }
         String phone = user.getPhoneNumber();
         String email = user.getEmail();
 
-        if (phone != null && !phone.isEmpty()) {
+        if (phone != null && !phone.isBlank()) {
             sendSms(phone, message);
         }
-        if (email != null && !email.isEmpty()) {
+        if (email != null && !email.isBlank()) {
             sendEmail(email, subject, message);
         }
     }

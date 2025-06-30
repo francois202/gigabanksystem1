@@ -1,13 +1,13 @@
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.*;
-import gigabank.accountmanagement.service.notification.ExternalNotificationAdapter;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import gigabank.accountmanagement.service.paymentstrategy.CardPaymentStrategy;
+import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,13 +38,17 @@ public class SecurityLoggingProxyTest {
             @Override
             public void sendRefundNotification(User user,String message) {
             System.out.println("Уведомление отправлено: " + message);
-        }
+            }
         };
 
-        bankAccountService = new BankAccountService(paymentGatewayService,notificationAdapter); {
-
+        bankAccountService = new BankAccountService(paymentGatewayService,notificationAdapter);
+        Random fixedRandom = new Random() {
+            @Override
+            public boolean nextBoolean() {
+                return true;
+            }
         };
-        securityLoggingProxy = new SecurityLoggingProxy(bankAccountService);
+        securityLoggingProxy = new SecurityLoggingProxy(bankAccountService, fixedRandom);
         bankAccount = new BankAccount("1", new ArrayList<>());
         bankAccount.setBalance(new BigDecimal("1000.00"));
         paymentAmount = new BigDecimal("100.00");
@@ -56,16 +60,7 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
-    void testProcessPaymentSucceedsWhenAccessGranted() throws NoSuchFieldException,IllegalAccessException {
-        // Устанавливаем Random, который всегда возвращает true
-        Random fixedRandom = new Random() {
-            @Override
-            public boolean nextBoolean() {
-                return true;
-            }
-        };
-        setRandomField(securityLoggingProxy, fixedRandom);
-
+    void testProcessPaymentSucceedsWhenAccessGranted() {
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
 
         assertEquals(new BigDecimal("900.00"), bankAccount.getBalance(), "Баланс должен уменьшиться на сумму платежа");
@@ -74,25 +69,18 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
-    void testProcessPaymentDoesNotExecuteWhenAccessDenied() throws NoSuchFieldException,IllegalAccessException {
-        // Устанавливаем Random, который всегда возвращает false
-        Random fixedRandom = new Random() {
+    void testProcessPaymentDoesNotExecuteWhenAccessDenied() {
+        Random deniedRandom = new Random() {
             @Override
             public boolean nextBoolean() {
                 return false;
             }
         };
-        setRandomField(securityLoggingProxy, fixedRandom);
+        SecurityLoggingProxy deniedProxy = new SecurityLoggingProxy(bankAccountService, deniedRandom);
 
-        securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
+        deniedProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
 
         assertEquals(new BigDecimal("1000.00"), bankAccount.getBalance(), "Баланс должен оставаться неизменным");
         assertEquals(0, bankAccount.getTransactions().size(), "Никакие транзакции не должны добавляться");
-    }
-    private void setRandomField(SecurityLoggingProxy proxy, Random random) throws NoSuchFieldException, IllegalAccessException {
-        Field randomField = SecurityLoggingProxy.class.getDeclaredField("random");
-        randomField.setAccessible(true);
-        randomField.set(proxy, random);
-        randomField.setAccessible(false);
     }
 }

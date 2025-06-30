@@ -7,8 +7,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
-
 /**
  * Информация о банковском счете пользователя
  */

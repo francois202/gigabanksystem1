@@ -1,7 +1,7 @@
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.service.BankTransferStrategy;
-import gigabank.accountmanagement.service.CardPaymentStrategy;
-import gigabank.accountmanagement.service.DigitalWalletPaymentStrategy;
+import gigabank.accountmanagement.service.paymentstrategy.BankTransferStrategy;
+import gigabank.accountmanagement.service.paymentstrategy.CardPaymentStrategy;
+import gigabank.accountmanagement.service.paymentstrategy.DigitalWalletPaymentStrategy;
 import gigabank.accountmanagement.service.PaymentGatewayService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
