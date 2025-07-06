@@ -14,3 +14,4 @@ public class UserRequest {
     private String paymentType;
     private Map<String, String> paymentDetails;
 }
+
