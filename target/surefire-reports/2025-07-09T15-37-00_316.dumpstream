@@ -1,0 +1,18 @@
+# Created at 2025-07-09T15:37:00.689
+[AppClassLoader@2c7b84de] info AspectJ Weaver Version 1.9.19 built on Wednesday Dec 21, 2022 at 06:57:22 PST
+
+# Created at 2025-07-09T15:37:00.689
+[AppClassLoader@2c7b84de] info register classloader jdk.internal.loader.ClassLoaders$AppClassLoader@2c7b84de
+
+# Created at 2025-07-09T15:37:00.689
+[AppClassLoader@2c7b84de] info using configuration /C:/Users/Kit/IdeaProjects/DemoSQL/gigabanksystem_new/target/classes/META-INF/aop.xml
+
+# Created at 2025-07-09T15:37:00.690
+[AppClassLoader@2c7b84de] info register aspect gigabank.accountmanagement.annotation.LoggingAspect
+
+# Created at 2025-07-09T15:37:01.590
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+# Created at 2025-07-09T15:37:02.161
+[AppClassLoader@2c7b84de] warning javax.* types are not being woven because the weaver option '-Xset:weaveJavaxPackages=true' has not been specified
+

@@ -6,6 +6,8 @@ import gigabank.accountmanagement.service.PaymentGatewayService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -13,25 +15,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 public class PaymentStrategyTest {
-
+    @Mock
+    private PaymentGatewayService paymentGatewayService;
+    @Mock
     private BankAccount bankAccount;
     private BigDecimal initialBalance;
     private BigDecimal paymentAmount;
     private Map<String, String> details;
-    private PaymentGatewayService paymentGatewayService;
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         initialBalance = new BigDecimal("1000.00");
         paymentAmount = new BigDecimal("200.00");
         bankAccount = new BankAccount("1", new ArrayList<>());
         bankAccount.setBalance(initialBalance);
-        details = new HashMap<>();
-        paymentGatewayService = PaymentGatewayService.getInstance();
+        details = new HashMap<String, String>();
+        when(paymentGatewayService.processPayment(paymentAmount, details)).thenReturn(true);
     }
-
     @Test
     @DisplayName("Проверяет уменьшение баланса при оплате картой")
     void testCardPaymentDecreasesBalance() {
@@ -47,7 +51,6 @@ public class PaymentStrategyTest {
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Card Payment", bankAccount.getTransactions().get(0).getCategory());
     }
-
     @Test
     @DisplayName("Проверяет уменьшение баланса при банковском переводе")
     void testBankTransferDecreasesBalance() {
@@ -62,7 +65,6 @@ public class PaymentStrategyTest {
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Bank Transfer", bankAccount.getTransactions().get(0).getCategory());
     }
-
     @Test
     @DisplayName("Проверяет уменьшение баланса при оплате через цифровой кошелёк")
     void testDigitalWalletPaymentDecreasesBalance() {

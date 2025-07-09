@@ -1,25 +1,30 @@
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.*;
-import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import gigabank.accountmanagement.service.paymentstrategy.CardPaymentStrategy;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class SecurityLoggingProxyTest {
 
+    @Mock
     private BankAccountService bankAccountService;
+
+    @InjectMocks
     private SecurityLoggingProxy securityLoggingProxy;
+
     private BankAccount bankAccount;
     private BigDecimal paymentAmount;
     private PaymentStrategy paymentStrategy;
@@ -27,60 +32,28 @@ public class SecurityLoggingProxyTest {
 
     @BeforeEach
     void setUp() {
-        PaymentGatewayService paymentGatewayService = PaymentGatewayService.getInstance();
-
-        NotificationAdapter notificationAdapter = new NotificationAdapter() {
-            @Override
-            public void sendPaymentNotification(User user,String message) {
-                System.out.println("Уведомление отправлено: " + message);
-            }
-
-            @Override
-            public void sendRefundNotification(User user,String message) {
-            System.out.println("Уведомление отправлено: " + message);
-            }
-        };
-
-        bankAccountService = new BankAccountService(paymentGatewayService,notificationAdapter);
-        Random fixedRandom = new Random() {
-            @Override
-            public boolean nextBoolean() {
-                return true;
-            }
-        };
-        securityLoggingProxy = new SecurityLoggingProxy(bankAccountService, fixedRandom);
+        MockitoAnnotations.openMocks(this);
         bankAccount = new BankAccount("1", new ArrayList<>());
         bankAccount.setBalance(new BigDecimal("1000.00"));
         paymentAmount = new BigDecimal("100.00");
-        paymentStrategy = new CardPaymentStrategy(); // Используем конкретную стратегию
-        details = new HashMap<>();
+        paymentStrategy = new CardPaymentStrategy();
+        details = new HashMap<String, String>();
         details.put("cardNumber", "1234-5678-9012-3456");
         details.put("merchantName", "Test Merchant");
+        doNothing().when(bankAccountService).processPayment(any(BankAccount.class), any(BigDecimal.class), any(PaymentStrategy.class), any(Map.class));
     }
-
     @Test
     @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
     void testProcessPaymentSucceedsWhenAccessGranted() {
+        securityLoggingProxy.setTestAccessGranted(true);
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
-
-        assertEquals(new BigDecimal("900.00"), bankAccount.getBalance(), "Баланс должен уменьшиться на сумму платежа");
-        assertEquals(1, bankAccount.getTransactions().size(), "Необходимо добавить одну транзакцию");
+        verify(bankAccountService, atLeastOnce()).processPayment(bankAccount, paymentAmount, paymentStrategy, details);
     }
-
     @Test
     @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
     void testProcessPaymentDoesNotExecuteWhenAccessDenied() {
-        Random deniedRandom = new Random() {
-            @Override
-            public boolean nextBoolean() {
-                return false;
-            }
-        };
-        SecurityLoggingProxy deniedProxy = new SecurityLoggingProxy(bankAccountService, deniedRandom);
-
-        deniedProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
-
-        assertEquals(new BigDecimal("1000.00"), bankAccount.getBalance(), "Баланс должен оставаться неизменным");
-        assertEquals(0, bankAccount.getTransactions().size(), "Никакие транзакции не должны добавляться");
+        securityLoggingProxy.setTestAccessGranted(false);
+        securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
+        verify(bankAccountService, never()).processPayment(any(BankAccount.class), any(BigDecimal.class), any(PaymentStrategy.class), any(Map.class));
     }
 }

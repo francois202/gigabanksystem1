@@ -51,7 +51,7 @@ public class LogExecutionTimeAnnotationTest {
                 TransactionType.PAYMENT,
                 BEAUTY_CATEGORY,
                 bankAccount,
-                LocalDateTime.now(), // В пределах последнего месяца
+                LocalDateTime.now(),
                 "Beauty Store",
                 "7230",
                 "1234-5678-9012-3456",
@@ -64,7 +64,7 @@ public class LogExecutionTimeAnnotationTest {
                 TransactionType.PAYMENT,
                 FOOD_CATEGORY,
                 bankAccount,
-                TEN_DAYS_AGO, // В пределах последнего месяца
+                TEN_DAYS_AGO,
                 "Grocery Store",
                 "5411",
                 "9876-5432-1098-7654",
@@ -75,25 +75,21 @@ public class LogExecutionTimeAnnotationTest {
         user.setBankAccounts(new ArrayList<>());
         user.getBankAccounts().add(bankAccount);
     }
-
     @AfterEach
     public void tearDown() {
         // Восстановление System.out
         System.setOut(originalOut);
     }
-
     @Test
     @DisplayName("Проверяет выполнение метода с аннотацией @LogExecutionTime без ошибок")
     public void testLogExecutionTimeNoErrors() {
         assertDoesNotThrow(() -> {
             analyticsService.getMonthlySpendingByCategory(bankAccount, BEAUTY_CATEGORY);
         });
-
         String logOutput = outContent.toString();
         assertTrue(logOutput.contains("Продолжительность"),
                 "Лог должен содержать информацию о времени выполнения");
     }
-
     @Test
     @DisplayName("Проверяет поведение метода с аннотацией @LogExecutionTime и корректность результатов")
     public void testLogExecutionTimeBehaviorUnchanged() {

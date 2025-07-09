@@ -1,0 +1,8 @@
+<aspectj>
+    <weaver options="-verbose">
+        <include within="gigabank..*"/>
+    </weaver>
+    <aspects>
+        <aspect name="gigabank.accountmanagement.annotation.LoggingAspect"/>
+    </aspects>
+</aspectj>

@@ -6,6 +6,9 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,15 +18,16 @@ import java.util.UUID;
 /**
  * Сервис для обработки возвратов денежных средств.
  */
+@Service
 public class RefundService {
     private final NotificationAdapter notificationAdapter;
     private final PaymentGatewayService paymentGatewayService;
 
-    public RefundService(PaymentGatewayService paymentGatewayService,NotificationAdapter notificationAdapter) {
-        this.paymentGatewayService = paymentGatewayService.getInstance();
+    @Autowired
+    public RefundService(PaymentGatewayService paymentGatewayService,@Qualifier("email") NotificationAdapter notificationAdapter) {
+        this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
     }
-
     public void processRefund(BankAccount bankAccount,BigDecimal value,Map<String,String> details) {
         boolean success = paymentGatewayService.processRefund(value, details);
         if (success) {

@@ -1,30 +1,126 @@
 package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.BankAccount;
+import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
+@Service
 public class BankAccountService {
     private final Map<User, List<BankAccount>> userBankAccounts;
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService,NotificationAdapter notificationAdapter) {
-        this.paymentGatewayService = paymentGatewayService.getInstance();
+    @Autowired
+    public BankAccountService(PaymentGatewayService paymentGatewayService,@Qualifier ("email") NotificationAdapter notificationAdapter) {
+        this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
         this.userBankAccounts = new HashMap<>();
     }
-    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String,String> details) {
+
+    public BankAccount createAccount(BankAccount account) {
+        if (account.getOwner() != null && account.getTransactions() == null) {
+            account.setTransactions(new ArrayList<>());
+            userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
+        }
+        return account;
+    }
+
+    public BankAccount getAccount(String id) {
+        return userBankAccounts.values().stream()
+                .flatMap(List::stream)
+                .filter(a -> a.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void deposit(String id,BigDecimal amount) {
+        BankAccount account = getAccount(id);
+        if (account != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            account.setBalance(account.getBalance().add(amount));
+            // Добавить транзакцию
+            Transaction transaction = new Transaction(
+                    "DEP_" + System.currentTimeMillis(),
+                    amount,
+                    TransactionType.DEPOSIT,
+                    "Deposit",
+                    account,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            account.getTransactions().add(transaction);
+        }
+    }
+
+    public void withdraw(String id,BigDecimal amount) {
+        BankAccount account = getAccount(id);
+        if (account != null && account.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
+            account.setBalance(account.getBalance().subtract(amount));
+            // Добавить транзакцию
+            Transaction transaction = new Transaction(
+                    "WDR_" + System.currentTimeMillis(),
+                    amount,
+                    TransactionType.WITHDRAWAL,
+                    "Withdrawal",
+                    account,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            account.getTransactions().add(transaction);
+        }
+    }
+
+    public void transfer(String fromId,String toId,BigDecimal amount) {
+        BankAccount fromAccount = getAccount(fromId);
+        BankAccount toAccount = getAccount(toId);
+        if (fromAccount != null && toAccount != null && fromAccount.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
+            fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+            toAccount.setBalance(toAccount.getBalance().add(amount));
+            // Добавить транзакции
+            Transaction fromTransaction = new Transaction(
+                    "TRF_" + System.currentTimeMillis() + "_FROM",
+                    amount,
+                    TransactionType.TRANSFER,
+                    "Transfer Out",
+                    fromAccount,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            Transaction toTransaction = new Transaction(
+                    "TRF_" + System.currentTimeMillis() + "_TO",
+                    amount,
+                    TransactionType.TRANSFER,
+                    "Transfer In",
+                    toAccount,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            fromAccount.getTransactions().add(fromTransaction);
+            toAccount.getTransactions().add(toTransaction);
+        }
+    }
+
+    public List<Transaction> getTransactions(String id) {
+        BankAccount account = getAccount(id);
+        return account != null ? account.getTransactions() : null;
+    }
+
+    public void processPayment(BankAccount bankAccount,BigDecimal value,PaymentStrategy strategy,Map<String,String> details) {
         Objects.requireNonNull(bankAccount, "BankAccount must not be null");
         Objects.requireNonNull(strategy, "PaymentStrategy must not be null");
         Objects.requireNonNull(details, "Details map must not be null");
@@ -44,8 +140,3 @@ public class BankAccountService {
         System.out.println(message);
     }
 }
-
-
-
-
-

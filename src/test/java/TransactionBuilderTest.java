@@ -49,7 +49,6 @@ public class TransactionBuilderTest {
         assertNull(transaction.getBankName(), "BankName должен быть null");
         assertNull(transaction.getDigitalWalletId(), "DigitalWalletId должен быть null");
     }
-
     @Test
     @DisplayName("Проверяет создание транзакции со всеми полями")
     public void testBuildTransactionWithAllFields() {
@@ -79,7 +78,6 @@ public class TransactionBuilderTest {
         assertEquals(BANK_NAME, transaction.getBankName(), "BankName должен быть установлен");
         assertEquals(DIGITAL_WALLET_ID, transaction.getDigitalWalletId(), "DigitalWalletId должен быть установлен");
     }
-
     @Test
     @DisplayName("Проверяет создание транзакции с обязательными и одним необязательным полем")
     public void testBuildTransactionWithOptionalFieldsNull() {

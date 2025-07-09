@@ -1,22 +1,14 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.Transaction;
-import gigabank.accountmanagement.entity.User;
+import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 
 /**
  * Сервис отвечает за управление платежами и переводами
  */
+@Service
 public class TransactionService {
     public static final Set<String> transactionCategories = Set.of(
             "Health", "Beauty", "Education");

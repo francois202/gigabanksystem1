@@ -1,10 +1,8 @@
 package gigabank.accountmanagement.entity;
 
 import lombok.Data;
-
 import java.time.LocalDate;
 import java.util.List;
-
 /**
  * Информация о пользователе
  */

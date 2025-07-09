@@ -3,12 +3,14 @@ package gigabank.accountmanagement.service.paymentstrategy;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+@Service
 public class CardPaymentStrategy implements PaymentStrategy {
     private static final String CARD_NUMBER_KEY = "cardNumber";
     private static final String MERCHANT_NAME_KEY = "merchantName";
@@ -32,4 +34,3 @@ public class CardPaymentStrategy implements PaymentStrategy {
         bankAccount.getTransactions().add(transaction);
     }
 }
-

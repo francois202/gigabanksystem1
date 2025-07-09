@@ -7,6 +7,7 @@ import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import java.util.Set;
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@Service
 @RequiredArgsConstructor
 public class AnalyticsService {
     private final TransactionService transactionService;
@@ -36,7 +38,6 @@ public class AnalyticsService {
         if (bankAccount == null || StringUtils.isBlank(category)) {
             return amount;
         }
-
         LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
         for (Transaction transaction : bankAccount.getTransactions()) {
             if (TransactionType.PAYMENT.equals(transaction.getType())
@@ -47,7 +48,6 @@ public class AnalyticsService {
         }
         return amount;
     }
-
     /**
      * Вывод суммы потраченных средств на n категорий за последний месяц
      * со всех счетов пользователя
@@ -58,7 +58,7 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user,Set<String> categories){
         Map<String, BigDecimal> result = new HashMap<>();
-        Set<String> validCategories = new TransactionService().validateCategories(categories);
+        Set<String> validCategories = transactionService.validateCategories(categories);
         if (user == null || validCategories.isEmpty())
             return result;
         LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
@@ -73,7 +73,6 @@ public class AnalyticsService {
         }
         return result;
     }
-
     /**
      * Вывод платежных операций по всем счетам и по всем категориям от наибольшей к наименьшей
      * @param user - пользователь
@@ -88,15 +87,12 @@ public class AnalyticsService {
             for (Transaction transaction : bankAccount.getTransactions()){
                 if (TransactionType.PAYMENT.equals(transaction.getType()))
                     result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
-//                     transactions.add(transaction);
             }
         }
-
         transactions.sort(Comparator.comparing(Transaction::getValue));
         for (Transaction transaction : transactions){
             result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
         }
-
         return result;
     }
     /**
@@ -107,22 +103,17 @@ public class AnalyticsService {
     public List<Transaction> getLastNTransaction(User user,int n){
         List<Transaction> allTransaction = new ArrayList<>();
         List<Transaction> result = new ArrayList<>();
-
         if (user == null)
             return result;
-
         for (BankAccount bankAccount : user.getBankAccounts()){
             allTransaction.addAll(bankAccount.getTransactions());
         }
         allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
-
         for (int i = 0; i < Math.min(n, allTransaction.size()); i++) {
             result.add(allTransaction.get(i));
         }
-
         return result;
     }
-
     /**
      * Вывод топ-N самых больших платежных транзакций пользователя
      * @param user - пользователь

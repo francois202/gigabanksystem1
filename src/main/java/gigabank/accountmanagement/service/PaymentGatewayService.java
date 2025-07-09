@@ -1,12 +1,19 @@
 package gigabank.accountmanagement.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.math.BigDecimal;
 import java.util.Map;
 
+@Component
 public class PaymentGatewayService {
-    private static volatile PaymentGatewayService instance;
+    private static final Logger logger = LoggerFactory.getLogger(PaymentGatewayService.class);
 
-    PaymentGatewayService() {
+    public PaymentGatewayService() {
         try {
             System.out.println("Установление соединения с внешним платежным шлюзом...");
             Thread.sleep(2000); // Имитация задержки
@@ -16,16 +23,6 @@ public class PaymentGatewayService {
             Thread.currentThread().interrupt();
         }
     }
-    public static PaymentGatewayService getInstance() {
-        if (instance == null) {
-            synchronized (PaymentGatewayService.class) {
-                if (instance == null) {
-                    instance = new PaymentGatewayService();
-                }
-            }
-        }
-        return instance;
-    }
     /**
      * Выполняет списание средств через внешний платежный шлюз.
      * @param value Сумма для списания
@@ -34,7 +31,7 @@ public class PaymentGatewayService {
      */
     public boolean processPayment(BigDecimal value,Map<String,String> details) {
         System.out.println("Обработка платежа: "+ value +" с указанием реквизитов: " + details);
-        // Симуляция обработки платежа
+        logger.info("Обработка платежа: {} с указанием реквизитов: {}", value, details);
         return true;
     }
     /**
@@ -45,7 +42,15 @@ public class PaymentGatewayService {
      */
     public boolean processRefund(BigDecimal value,Map<String,String> details) {
         System.out.println("Обработка возврата средств: "+ value +" с указанием подробной информации: " + details);
-        // Симуляция возврата
+        logger.info("Обработка возврата средств: {} с указанием подробной информации: {}", value, details);
         return true;
+    }
+    @PostConstruct
+    public void init() {
+        logger.info("Инициализация PaymentGatewayService. Установка соединения завершена.");
+    }
+    @PreDestroy
+    public void destroy() {
+        logger.info("Завершение работы PaymentGatewayService. Освобождение ресурсов.");
     }
 }
