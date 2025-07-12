@@ -8,9 +8,9 @@ import java.util.Set;
  */
 public class TransactionService {
 
-    //почему здесь Set, а не List?
+
     public static Set<String> transactionCategories = Set.of(
-            "Health", "Beauty", "Education");
+            "Food", "Health", "Beauty", "Education");
 
     public Set<String> validateCategories (Set<String> categories) {
         Set<String> result = new HashSet<>();
