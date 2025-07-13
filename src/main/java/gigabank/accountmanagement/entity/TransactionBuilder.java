@@ -72,7 +72,6 @@ public class TransactionBuilder {
     }
 
     public synchronized Transaction build() {
-        return new Transaction(id,value,type,category,bankAccount,createdDate,merchantName,merchantCategoryCode,cardNumber,bankName,digitalWalletId);
-
+        return new Transaction(id, value, type, category, bankAccount, createdDate, merchantName, merchantCategoryCode, cardNumber, bankName, digitalWalletId);
     }
 }

@@ -15,34 +15,37 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ComponentScan(basePackages ={"gigabank.accountmanagement.service",
-                              "gigabank.accountmanagement.entity",
-})
 public class AppConfig {
     @Bean
     public PaymentGatewayService paymentGatewayService() {
         return new PaymentGatewayService();
     }
+
     @Bean
     public ExternalNotificationService externalNotificationService() {
         return new ExternalNotificationService();
     }
+
     @Bean
     public BankAccountService bankAccountService(PaymentGatewayService paymentGatewayService, @Qualifier("email") NotificationAdapter emailNotificationAdapter) {
         return new BankAccountService(paymentGatewayService, emailNotificationAdapter);
     }
+
     @Bean
     public SecurityLoggingProxy securityLoggingProxy(BankAccountService bankAccountService) {
         return new SecurityLoggingProxy(bankAccountService);
     }
+
     @Bean
     public CardPaymentStrategy cardPaymentStrategy() {
         return new CardPaymentStrategy();
     }
+
     @Bean
     public DigitalWalletPaymentStrategy digitalWalletPaymentStrategy() {
         return new DigitalWalletPaymentStrategy();
     }
+
     @Bean
     public BankTransferStrategy bankTransferStrategy() {
         return new BankTransferStrategy();

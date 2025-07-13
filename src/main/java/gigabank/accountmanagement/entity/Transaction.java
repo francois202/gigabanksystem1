@@ -3,8 +3,10 @@ package gigabank.accountmanagement.entity;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 /**
  * Информация о совершенной банковской транзакции
  */
@@ -23,7 +25,7 @@ public class Transaction {
     private String bankName;
     private String digitalWalletId;
 
-    public Transaction(String id,BigDecimal value,TransactionType type,String category,BankAccount bankAccount,LocalDateTime createdDate,String merchantName,String merchantCategoryCode,String cardNumber,String bankName,String digitalWalletId) {
+    public Transaction(String id, BigDecimal value, TransactionType type, String category, BankAccount bankAccount, LocalDateTime createdDate, String merchantName, String merchantCategoryCode, String cardNumber, String bankName, String digitalWalletId) {
         this.id = id;
         this.value = value;
         this.type = type;
@@ -36,6 +38,7 @@ public class Transaction {
         this.bankName = bankName;
         this.digitalWalletId = digitalWalletId;
     }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -51,5 +54,8 @@ public class Transaction {
                 ", digitalWalletId='" + digitalWalletId + '\'' +
                 '}';
     }
-    public static TransactionBuilder builder() {return new TransactionBuilder();}
+
+    public static TransactionBuilder builder() {
+        return new TransactionBuilder();
+    }
 }

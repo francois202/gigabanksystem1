@@ -17,6 +17,9 @@ C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\acco
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\BankAccountService.java
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\controllers\BankAccountController.java
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\controllers\TransactionController.java
+C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\DBConnectionManager.java
+C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\exceptions\AccountNotFoundException.java
+C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\exceptions\GlobalExceptionHandler.java
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\notification\EmailNotificationAdapter.java
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\notification\ExternalNotificationAdapter.java
 C:\Users\Kit\IdeaProjects\DemoSQL\gigabanksystem_new\src\main\java\gigabank\accountmanagement\service\notification\ExternalNotificationService.java

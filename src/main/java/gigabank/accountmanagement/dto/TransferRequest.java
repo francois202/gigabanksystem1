@@ -2,6 +2,7 @@ package gigabank.accountmanagement.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 
 public record TransferRequest(
@@ -14,4 +15,5 @@ public record TransferRequest(
         @NotNull(message = "Сумма перевода не может быть пустой")
         @Min(value = 1, message = "Сумма перевода должна быть больше нуля")
         BigDecimal amount
-) {}
+) {
+}

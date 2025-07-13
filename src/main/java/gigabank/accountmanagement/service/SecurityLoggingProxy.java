@@ -23,7 +23,8 @@ public class SecurityLoggingProxy {
     public SecurityLoggingProxy(BankAccountService bankAccountService) {
         this.bankAccountService = bankAccountService;
     }
-    public void processPayment(BankAccount bankAccount,BigDecimal value,PaymentStrategy strategy,Map<String,String> details) {
+
+    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
         System.out.println("Проверка доступа для выполнения операции...");
         if (testAccessGranted) {
             System.out.println("Доступ разрешён. Выполняем операцию...");

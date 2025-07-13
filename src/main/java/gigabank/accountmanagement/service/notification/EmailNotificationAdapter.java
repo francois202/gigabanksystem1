@@ -5,19 +5,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-@Qualifier("email")
 public class EmailNotificationAdapter implements NotificationAdapter {
     private final ExternalNotificationService externalNotificationService;
 
     public EmailNotificationAdapter(ExternalNotificationService externalNotificationService) {
         this.externalNotificationService = externalNotificationService;
     }
+
     @Override
-    public void sendPaymentNotification(User user,String message) {
+    public void sendPaymentNotification(User user, String message) {
         externalNotificationService.sendNotification(user, message, "Уведомление об оплате (Email)");
     }
+
     @Override
-    public void sendRefundNotification(User user,String message) {
+    public void sendRefundNotification(User user, String message) {
         externalNotificationService.sendNotification(user, message, "Уведомление о возврате средств (Email)");
     }
 }

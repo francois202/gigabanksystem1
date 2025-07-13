@@ -3,6 +3,7 @@ gigabank\accountmanagement\dto\UserRequest.class
 gigabank\accountmanagement\service\SecurityLoggingProxy.class
 gigabank\accountmanagement\dto\TransferRequest.class
 gigabank\accountmanagement\service\controllers\TransactionController.class
+gigabank\accountmanagement\service\exceptions\GlobalExceptionHandler.class
 gigabank\accountmanagement\service\notification\SmsNotificationAdapter.class
 gigabank\accountmanagement\annotation\LoggingAspect.class
 gigabank\accountmanagement\service\TransactionService.class
@@ -15,6 +16,7 @@ gigabank\accountmanagement\service\paymentstrategy\DigitalWalletPaymentStrategy.
 gigabank\accountmanagement\service\RefundService.class
 gigabank\accountmanagement\entity\BankAccount.class
 gigabank\accountmanagement\entity\TransactionType.class
+gigabank\accountmanagement\service\exceptions\AccountNotFoundException.class
 gigabank\accountmanagement\entity\User.class
 gigabank\accountmanagement\service\paymentstrategy\PaymentStrategy.class
 gigabank\accountmanagement\Main.class
@@ -22,6 +24,7 @@ gigabank\accountmanagement\Application.class
 gigabank\accountmanagement\dto\CreateAccountRequest.class
 gigabank\accountmanagement\entity\Refund.class
 gigabank\accountmanagement\entity\TransactionBuilder.class
+gigabank\accountmanagement\service\DBConnectionManager.class
 gigabank\accountmanagement\service\notification\ExternalNotificationService.class
 gigabank\accountmanagement\service\PaymentGatewayService.class
 gigabank\accountmanagement\service\BankAccountService.class

@@ -27,13 +27,15 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AnalyticsService {
     private final TransactionService transactionService;
+
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
+     *
      * @param bankAccount - счет
-     * @param category - категория
+     * @param category    - категория
      */
     @LogExecutionTime
-    public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount,String category){
+    public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         BigDecimal amount = BigDecimal.ZERO;
         if (bankAccount == null || StringUtils.isBlank(category)) {
             return amount;
@@ -48,94 +50,98 @@ public class AnalyticsService {
         }
         return amount;
     }
+
     /**
      * Вывод суммы потраченных средств на n категорий за последний месяц
      * со всех счетов пользователя
      *
-     * @param user - пользователь
+     * @param user       - пользователь
      * @param categories - категории
      * @return мапа категория - сумма потраченных средств
      */
-    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user,Set<String> categories){
+    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> result = new HashMap<>();
         Set<String> validCategories = transactionService.validateCategories(categories);
         if (user == null || validCategories.isEmpty())
             return result;
         LocalDateTime oneMonth = LocalDateTime.now().minusMonths(1L);
-        for (BankAccount bankAccount : user.getBankAccounts()){
-            for(Transaction transaction : bankAccount.getTransactions()){
+        for (BankAccount bankAccount : user.getBankAccounts()) {
+            for (Transaction transaction : bankAccount.getTransactions()) {
                 if (TransactionType.PAYMENT.equals(transaction.getType())
                         && validCategories.contains(transaction.getCategory())
-                        && transaction.getCreatedDate().isAfter(oneMonth)){
+                        && transaction.getCreatedDate().isAfter(oneMonth)) {
                     result.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
                 }
             }
         }
         return result;
     }
+
     /**
      * Вывод платежных операций по всем счетам и по всем категориям от наибольшей к наименьшей
+     *
      * @param user - пользователь
      * @return мапа категория - все операции совершенные по ней
      */
-    public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user){
-        LinkedHashMap<String, List<Transaction>> result = new LinkedHashMap<>();
-        if (user == null)
-            return result;
-         List<Transaction> transactions = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()){
-            for (Transaction transaction : bankAccount.getTransactions()){
-                if (TransactionType.PAYMENT.equals(transaction.getType()))
-                    result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
+    public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
+        LinkedHashMap<String, List<Transaction>> categorizedTransactions = new LinkedHashMap<>();
+        if (user == null) {
+            return categorizedTransactions;
+        }
+        for (BankAccount bankAccount : user.getBankAccounts()) {
+            for (Transaction transaction : bankAccount.getTransactions()) {
+                if (TransactionType.PAYMENT.equals(transaction.getType())) {
+                    categorizedTransactions.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
+                }
             }
         }
-        transactions.sort(Comparator.comparing(Transaction::getValue));
-        for (Transaction transaction : transactions){
-            result.computeIfAbsent(transaction.getCategory(), k -> new ArrayList<>()).add(transaction);
+        for (List<Transaction> transactions : categorizedTransactions.values()) {
+            transactions.sort(Comparator.comparing(Transaction::getValue));
         }
-        return result;
+        return categorizedTransactions;
     }
+
     /**
-     *  Вывод последних N транзакций пользователя
+     * Вывод последних N транзакций пользователя
+     *
      * @param user - пользователь
-     * @param n - кол-во последних транзакций
+     * @param n    - кол-во последних транзакций
      */
-    public List<Transaction> getLastNTransaction(User user,int n){
-        List<Transaction> allTransaction = new ArrayList<>();
-        List<Transaction> result = new ArrayList<>();
-        if (user == null)
-            return result;
-        for (BankAccount bankAccount : user.getBankAccounts()){
-            allTransaction.addAll(bankAccount.getTransactions());
+    public List<Transaction> getLastNTransaction(User user, int n) {
+        if (user == null || n <= 0) {
+            return List.of();
         }
-        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
-        for (int i = 0; i < Math.min(n, allTransaction.size()); i++) {
-            result.add(allTransaction.get(i));
+        List<Transaction> allTransactions = new ArrayList<>();
+        for (BankAccount bankAccount : user.getBankAccounts()) {
+            allTransactions.addAll(bankAccount.getTransactions());
         }
-        return result;
+        allTransactions.sort(Comparator.comparing(Transaction::getCreatedDate).reversed());
+        return List.copyOf(allTransactions.subList(0, Math.min(n, allTransactions.size())));
     }
+
     /**
      * Вывод топ-N самых больших платежных транзакций пользователя
+     *
      * @param user - пользователь
-     * @param n - кол-во последних транзакций
+     * @param n    - кол-во последних транзакций
      */
     @LogExecutionTime
-    public PriorityQueue<Transaction> getTopNLargestTransactions(User user,int n){
+    public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
         PriorityQueue<Transaction> result = new PriorityQueue<>(
                 Comparator.comparing(Transaction::getValue)
         );
         if (user == null)
             return result;
-        for (BankAccount bankAccount : user.getBankAccounts()){
+        for (BankAccount bankAccount : user.getBankAccounts()) {
             if (bankAccount != null && bankAccount.getTransactions() != null) {
-            for (Transaction transaction : bankAccount.getTransactions()) {
-                if (TransactionType.PAYMENT.equals(transaction.getType())) {
-                    result.offer(transaction);
-                    while (result.size() > n) {
-                        result.poll();
+                for (Transaction transaction : bankAccount.getTransactions()) {
+                    if (TransactionType.PAYMENT.equals(transaction.getType())) {
+                        result.offer(transaction);
+                        while (result.size() > n) {
+                            result.poll();
+                        }
                     }
                 }
-            }
             }
         }
         return result;

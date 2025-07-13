@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.dto.CreateAccountRequest;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
@@ -26,19 +28,26 @@ public class BankAccountService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    @Autowired
-    public BankAccountService(PaymentGatewayService paymentGatewayService,@Qualifier ("email") NotificationAdapter notificationAdapter) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService, @Qualifier("email") NotificationAdapter notificationAdapter) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
         this.userBankAccounts = new HashMap<>();
     }
 
-    public BankAccount createAccount(BankAccount account) {
-        if (account.getOwner() != null && account.getTransactions() == null) {
-            account.setTransactions(new ArrayList<>());
+    public BankAccount createAccount(CreateAccountRequest request) {
+        try {
+            Integer userId = Integer.parseInt(request.userId());
+            User user = new User();
+            user.setId(String.valueOf(userId));
+            String accountNumber = "ACC_" + System.currentTimeMillis();
+            BankAccount account = new BankAccount(accountNumber, new ArrayList<>());
+            account.setOwner(user);
+            account.setBalance(request.initialBalance());
             userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
+            return account;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Неверный формат userId");
         }
-        return account;
     }
 
     public BankAccount getAccount(String id) {
@@ -49,7 +58,7 @@ public class BankAccountService {
                 .orElse(null);
     }
 
-    public void deposit(String id,BigDecimal amount) {
+    public void deposit(String id, BigDecimal amount) {
         BankAccount account = getAccount(id);
         if (account != null && amount.compareTo(BigDecimal.ZERO) > 0) {
             account.setBalance(account.getBalance().add(amount));
@@ -67,11 +76,10 @@ public class BankAccountService {
         }
     }
 
-    public void withdraw(String id,BigDecimal amount) {
+    public void withdraw(String id, BigDecimal amount) {
         BankAccount account = getAccount(id);
         if (account != null && account.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
             account.setBalance(account.getBalance().subtract(amount));
-            // Добавить транзакцию
             Transaction transaction = new Transaction(
                     "WDR_" + System.currentTimeMillis(),
                     amount,
@@ -85,7 +93,7 @@ public class BankAccountService {
         }
     }
 
-    public void transfer(String fromId,String toId,BigDecimal amount) {
+    public void transfer(String fromId, String toId, BigDecimal amount) {
         BankAccount fromAccount = getAccount(fromId);
         BankAccount toAccount = getAccount(toId);
         if (fromAccount != null && toAccount != null && fromAccount.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
@@ -120,15 +128,15 @@ public class BankAccountService {
         return account != null ? account.getTransactions() : null;
     }
 
-    public void processPayment(BankAccount bankAccount,BigDecimal value,PaymentStrategy strategy,Map<String,String> details) {
+    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
         Objects.requireNonNull(bankAccount, "BankAccount must not be null");
         Objects.requireNonNull(strategy, "PaymentStrategy must not be null");
         Objects.requireNonNull(details, "Details map must not be null");
 
         if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
-        throw new IllegalArgumentException("Payment value must be positive and non-null");
+            throw new IllegalArgumentException("Payment value must be positive and non-null");
         }
-        boolean success = paymentGatewayService.processPayment(value,details);
+        boolean success = paymentGatewayService.processPayment(value, details);
         if (!success) {
             throw new RuntimeException("Payment could not be processed: check the transaction details -" + details);
         }

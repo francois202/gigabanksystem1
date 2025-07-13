@@ -15,12 +15,14 @@ public class ExternalNotificationService {
     @Value("${notification.sender.sms}")
     private String senderPhone;
 
-    public void sendSms(String phone,String msg) {
+    public void sendSms(String phone, String msg) {
         System.out.println("Отправка SMS от " + (senderPhone != null ? senderPhone : "unknown") + " на " + phone + ": " + msg);
     }
-    public void sendEmail(String email,String subject, String body) {
+
+    public void sendEmail(String email, String subject, String body) {
         System.out.println("Отправка Email от " + (senderEmail != null ? senderEmail : "unknown") + " на " + email + ": " + subject + " - " + body);
     }
+
     /**
      * Отправляет уведомление пользователю через доступные каналы (SMS и/или email).
      *
@@ -28,7 +30,7 @@ public class ExternalNotificationService {
      * @param message Текст сообщения.
      * @param subject Тема сообщения (для email).
      */
-    public void sendNotification(User user,String message,String subject) {
+    public void sendNotification(User user, String message, String subject) {
         if (user == null || message == null || subject == null) {
             return;
         }
