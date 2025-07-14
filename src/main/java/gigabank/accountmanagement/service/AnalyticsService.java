@@ -22,7 +22,7 @@ public class AnalyticsService {
         for (Transaction transaction : bankAccount.getTransactions()){
             if (TransactionType.PAYMENT.equals(transaction.getType())
                     && transaction.getCategory().equals(category)
-                    && transaction.getCreatedData().isAfter(oneMonth)){
+                    && transaction.getCreatedDate().isAfter(oneMonth)){
                 amount = amount.add(transaction.getValue());
             }
         }
@@ -48,7 +48,7 @@ public class AnalyticsService {
             for (Transaction transaction : bankAccount.getTransactions()) {
                 if (TransactionType.PAYMENT.equals(transaction.getType())
                         && validCategories.contains(transaction.getCategory())
-                        && transaction.getCreatedData().isAfter(oneMonth)) {
+                        && transaction.getCreatedDate().isAfter(oneMonth)) {
                     result.merge(transaction.getCategory(), transaction.getValue(), BigDecimal::add);
                 }
             }
@@ -94,7 +94,7 @@ public class AnalyticsService {
         for (BankAccount bankAccount : user.getBankAccounts()){
             allTransaction.addAll(bankAccount.getTransactions());
         }
-        allTransaction.sort(Comparator.comparing(Transaction::getCreatedData));
+        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate));
 
         for(int i = 0; i < Math.min(n, allTransaction.size()); i++){
             result.add(allTransaction.get(i));

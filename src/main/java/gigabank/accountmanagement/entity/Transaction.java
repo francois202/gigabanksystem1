@@ -10,45 +10,47 @@ public class Transaction {
     private TransactionType type;
     private String category;
     private BankAccount bankAccount;
-    private LocalDateTime createdData;
+    private LocalDateTime createdDate;
 
 
-
-    public Transaction(String generatedId, BigDecimal value, TransactionType type, String category, LocalDateTime createdData){
+    public Transaction(String generatedId, BigDecimal value, TransactionType type, String category, LocalDateTime createdData) {
         this.id = generatedId;
         this.value = value;
         this.type = type;
         this.category = category;
-        this.createdData = createdData;
+        this.createdDate = createdData;
     }
 
     public TransactionType getType() {
         return type;
     }
-    public String getCategory(){
+
+    public String getCategory() {
         return category;
     }
-    public LocalDateTime getCreatedData() {
-        return createdData;
+
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
     }
+
     public BigDecimal getValue() {
         return value;
     }
 
-    public void setType(TransactionType type){
+    public void setType(TransactionType type) {
         this.type = type;
     }
 
-    public void setCategory(String category){
+    public void setCategory(String category) {
         this.category = category;
     }
 
-    public void setValue(BigDecimal bigDecimal){
+    public void setValue(BigDecimal bigDecimal) {
         this.value = bigDecimal;
     }
 
-    public void setCreatedData(LocalDateTime createdData){
-        this.createdData = createdData;
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
     }
 
 
