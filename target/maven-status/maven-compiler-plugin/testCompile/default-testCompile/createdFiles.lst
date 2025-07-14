@@ -1,7 +1,0 @@
-ExternalNotificationAdapterTest.class
-SecurityLoggingProxyTest.class
-PaymentGatewayServiceTest.class
-PaymentStrategyTest.class
-AnalyticsServiceTest.class
-TransactionBuilderTest.class
-LogExecutionTimeAnnotationTest.class
