@@ -6,10 +6,11 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import gigabank.accountmanagement.service.notification.NotificationAdapterFactory;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,15 +29,15 @@ public class BankAccountService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, @Qualifier("email") NotificationAdapter notificationAdapter) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService, NotificationAdapterFactory factory) {
         this.paymentGatewayService = paymentGatewayService;
-        this.notificationAdapter = notificationAdapter;
+        this.notificationAdapter = factory.getNotificationAdapter();
         this.userBankAccounts = new HashMap<>();
     }
 
     public BankAccount createAccount(CreateAccountRequest request) {
         try {
-            Integer userId = Integer.parseInt(request.userId());
+            Integer userId = request.userId();
             User user = new User();
             user.setId(String.valueOf(userId));
             String accountNumber = "ACC_" + System.currentTimeMillis();
@@ -46,7 +47,7 @@ public class BankAccountService {
             userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
             return account;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Неверный формат userId");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Неверный формат userId");
         }
     }
 
@@ -60,9 +61,15 @@ public class BankAccountService {
 
     public void deposit(String id, BigDecimal amount) {
         BankAccount account = getAccount(id);
-        if (account != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+        if (account == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Учетная запись не найдена",
+                    new IllegalArgumentException("Неверный ID учетной записи")
+            );
+        }
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
             account.setBalance(account.getBalance().add(amount));
-            // Добавить транзакцию
             Transaction transaction = new Transaction(
                     "DEP_" + System.currentTimeMillis(),
                     amount,
@@ -96,31 +103,39 @@ public class BankAccountService {
     public void transfer(String fromId, String toId, BigDecimal amount) {
         BankAccount fromAccount = getAccount(fromId);
         BankAccount toAccount = getAccount(toId);
-        if (fromAccount != null && toAccount != null && fromAccount.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
-            fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
-            toAccount.setBalance(toAccount.getBalance().add(amount));
-            // Добавить транзакции
-            Transaction fromTransaction = new Transaction(
-                    "TRF_" + System.currentTimeMillis() + "_FROM",
-                    amount,
-                    TransactionType.TRANSFER,
-                    "Transfer Out",
-                    fromAccount,
-                    LocalDateTime.now(),
-                    null, null, null, null, null
-            );
-            Transaction toTransaction = new Transaction(
-                    "TRF_" + System.currentTimeMillis() + "_TO",
-                    amount,
-                    TransactionType.TRANSFER,
-                    "Transfer In",
-                    toAccount,
-                    LocalDateTime.now(),
-                    null, null, null, null, null
-            );
-            fromAccount.getTransactions().add(fromTransaction);
-            toAccount.getTransactions().add(toTransaction);
+
+        if (fromAccount == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Счёт отправителя с ID " + fromId + " не найден");
         }
+        if (toAccount == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Счёт получателя с ID " + toId + " не найден");
+        }
+        if (fromAccount.getBalance().compareTo(amount) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недостаточно средств на счёте " + fromId);
+        }
+        fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+        toAccount.setBalance(toAccount.getBalance().add(amount));
+
+        Transaction fromTransaction = new Transaction(
+                "TRF_" + System.currentTimeMillis() + "_FROM",
+                amount,
+                TransactionType.TRANSFER,
+                "Transfer Out",
+                fromAccount,
+                LocalDateTime.now(),
+                null, null, null, null, null
+        );
+        Transaction toTransaction = new Transaction(
+                "TRF_" + System.currentTimeMillis() + "_TO",
+                amount,
+                TransactionType.TRANSFER,
+                "Transfer In",
+                toAccount,
+                LocalDateTime.now(),
+                null, null, null, null, null
+        );
+        fromAccount.getTransactions().add(fromTransaction);
+        toAccount.getTransactions().add(toTransaction);
     }
 
     public List<Transaction> getTransactions(String id) {

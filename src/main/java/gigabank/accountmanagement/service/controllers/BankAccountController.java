@@ -8,6 +8,7 @@ import gigabank.accountmanagement.service.exceptions.AccountNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
@@ -21,12 +22,15 @@ public class BankAccountController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createAccount(@Valid @RequestBody CreateAccountRequest request) {
+    public ResponseEntity<BankAccount> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         try {
             BankAccount createdAccount = bankAccountService.createAccount(request);
             return ResponseEntity.ok(createdAccount);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    e.getMessage()
+            );
         }
     }
 
@@ -41,10 +45,6 @@ public class BankAccountController {
 
     @PostMapping("/{id}/deposit")
     public ResponseEntity<BankAccount> deposit(@PathVariable String id, @Valid @RequestBody AmountRequest request) {
-        BankAccount account = bankAccountService.getAccount(id);
-        if (account == null) {
-            throw new AccountNotFoundException("Аккаунт с ID " + id + " не найден");
-        }
         bankAccountService.deposit(id, request.amount());
         return ResponseEntity.ok(bankAccountService.getAccount(id));
     }

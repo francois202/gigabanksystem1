@@ -36,6 +36,7 @@ public class PaymentStrategyTest {
         details = new HashMap<String, String>();
         when(paymentGatewayService.processPayment(paymentAmount, details)).thenReturn(true);
     }
+
     @Test
     @DisplayName("Проверяет уменьшение баланса при оплате картой")
     void testCardPaymentDecreasesBalance() {
@@ -51,6 +52,7 @@ public class PaymentStrategyTest {
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Card Payment", bankAccount.getTransactions().get(0).getCategory());
     }
+
     @Test
     @DisplayName("Проверяет уменьшение баланса при банковском переводе")
     void testBankTransferDecreasesBalance() {
@@ -65,6 +67,7 @@ public class PaymentStrategyTest {
         assertEquals(1, bankAccount.getTransactions().size());
         assertEquals("Bank Transfer", bankAccount.getTransactions().get(0).getCategory());
     }
+
     @Test
     @DisplayName("Проверяет уменьшение баланса при оплате через цифровой кошелёк")
     void testDigitalWalletPaymentDecreasesBalance() {

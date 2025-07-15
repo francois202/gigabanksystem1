@@ -75,11 +75,13 @@ public class LogExecutionTimeAnnotationTest {
         user.setBankAccounts(new ArrayList<>());
         user.getBankAccounts().add(bankAccount);
     }
+
     @AfterEach
     public void tearDown() {
         // Восстановление System.out
         System.setOut(originalOut);
     }
+
     @Test
     @DisplayName("Проверяет выполнение метода с аннотацией @LogExecutionTime без ошибок")
     public void testLogExecutionTimeNoErrors() {
@@ -90,6 +92,7 @@ public class LogExecutionTimeAnnotationTest {
         assertTrue(logOutput.contains("Продолжительность"),
                 "Лог должен содержать информацию о времени выполнения");
     }
+
     @Test
     @DisplayName("Проверяет поведение метода с аннотацией @LogExecutionTime и корректность результатов")
     public void testLogExecutionTimeBehaviorUnchanged() {

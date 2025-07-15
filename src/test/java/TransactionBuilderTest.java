@@ -1,6 +1,5 @@
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
-import gigabank.accountmanagement.entity.TransactionBuilder;
 import gigabank.accountmanagement.entity.TransactionType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TransactionBuilderTest {
+public class    TransactionBuilderTest {
     private static final String ID = "1";
     private static final BigDecimal VALUE = new BigDecimal("50.00");
     private static final TransactionType TYPE = TransactionType.PAYMENT;
@@ -49,6 +48,7 @@ public class TransactionBuilderTest {
         assertNull(transaction.getBankName(), "BankName должен быть null");
         assertNull(transaction.getDigitalWalletId(), "DigitalWalletId должен быть null");
     }
+
     @Test
     @DisplayName("Проверяет создание транзакции со всеми полями")
     public void testBuildTransactionWithAllFields() {
@@ -78,6 +78,7 @@ public class TransactionBuilderTest {
         assertEquals(BANK_NAME, transaction.getBankName(), "BankName должен быть установлен");
         assertEquals(DIGITAL_WALLET_ID, transaction.getDigitalWalletId(), "DigitalWalletId должен быть установлен");
     }
+
     @Test
     @DisplayName("Проверяет создание транзакции с обязательными и одним необязательным полем")
     public void testBuildTransactionWithOptionalFieldsNull() {

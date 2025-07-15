@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class SecurityLoggingProxyTest {
@@ -42,6 +41,7 @@ public class SecurityLoggingProxyTest {
         details.put("merchantName", "Test Merchant");
         doNothing().when(bankAccountService).processPayment(any(BankAccount.class), any(BigDecimal.class), any(PaymentStrategy.class), any(Map.class));
     }
+
     @Test
     @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
     void testProcessPaymentSucceedsWhenAccessGranted() {
@@ -49,6 +49,7 @@ public class SecurityLoggingProxyTest {
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
         verify(bankAccountService, atLeastOnce()).processPayment(bankAccount, paymentAmount, paymentStrategy, details);
     }
+
     @Test
     @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
     void testProcessPaymentDoesNotExecuteWhenAccessDenied() {

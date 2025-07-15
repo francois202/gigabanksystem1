@@ -3,7 +3,6 @@ package gigabank.accountmanagement.service;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -15,11 +14,9 @@ import java.util.Map;
 @Component
 public class SecurityLoggingProxy {
     private final BankAccountService bankAccountService;
-    // Метод для тестов
     @Setter
     private boolean testAccessGranted = false;
 
-    @Autowired
     public SecurityLoggingProxy(BankAccountService bankAccountService) {
         this.bankAccountService = bankAccountService;
     }

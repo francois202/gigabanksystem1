@@ -25,6 +25,7 @@ public class PaymentGatewayServiceTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
     }
+
     @Test
     @DisplayName("Проверяет успешное выполнение списания")
     void testProcessPaymentSuccess() {
@@ -39,6 +40,7 @@ public class PaymentGatewayServiceTest {
         verify(paymentGatewayService).processPayment(value, details);
         assert result;
     }
+
     @Test
     @DisplayName("Проверяет успешный возврат средств")
     void testProcessRefundSuccess() {

@@ -1,7 +1,6 @@
 package gigabank.accountmanagement.service.controllers;
 
 import gigabank.accountmanagement.dto.TransferRequest;
-import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.service.BankAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,21 +22,8 @@ public class TransactionController {
 
     @PostMapping("/transfer")
     public ResponseEntity<String> transfer(@RequestBody TransferRequest request) {
-        BankAccount fromAccount = bankAccountService.getAccount(request.fromId());
-        BankAccount toAccount = bankAccountService.getAccount(request.toId());
-
-        if (fromAccount == null) {
-            return ResponseEntity.badRequest().body("Счёт отправителя не найден");
-        }
-        if (toAccount == null) {
-            return ResponseEntity.badRequest().body("Счёт получателя не найден");
-        }
-        if (fromAccount.getBalance().compareTo(request.amount()) < 0) {
-            return ResponseEntity.badRequest().body("Недостаточно средств");
-        }
-
         bankAccountService.transfer(request.fromId(), request.toId(), request.amount());
-        return ResponseEntity.ok("Перевод выполнен успешно");
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/accounts/{id}/transactions")

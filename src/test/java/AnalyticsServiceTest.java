@@ -99,12 +99,14 @@ public class AnalyticsServiceTest {
         user.getBankAccounts().add(bankAccount1);
         user.getBankAccounts().add(bankAccount2);
     }
+
     @Test
     @DisplayName("Проверяет ежемесячные расходы по категории Beauty для существующего счета")
     public void get_monthly_spending_by_category() {
         BigDecimal result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
         assertEquals(TEN_DOLLARS, result);
     }
+
     @Test
     @DisplayName("Проверяет обработку некорректных входных данных для ежемесячных расходов")
     public void get_monthly_spending_by_category_invalid_input() {
@@ -134,6 +136,7 @@ public class AnalyticsServiceTest {
         result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
         assertEquals(BigDecimal.ZERO, result);
     }
+
     @Test
     @DisplayName("Проверяет историю транзакций пользователя, отсортированных по сумме")
     public void get_transaction_history_sorted_by_amount() {
@@ -147,6 +150,7 @@ public class AnalyticsServiceTest {
         assertEquals(TWENTY_DOLLARS, result.get(EDUCATION_CATEGORY).get(0).getValue());
         assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY).get(0).getValue());
     }
+
     @Test
     @DisplayName("Проверяет обработку некорректных входных данных для истории транзакций")
     public void get_transaction_history_sorted_by_amount_invalid_input() {
@@ -174,6 +178,7 @@ public class AnalyticsServiceTest {
         result = analyticsService.getTransactionHistorySortedByAmount(user);
         assertTrue(result.isEmpty());
     }
+
     @Test
     @DisplayName("Проверяет получение последних 2 транзакций для пользователя")
     public void get_last_n_transactions() {
@@ -182,6 +187,7 @@ public class AnalyticsServiceTest {
         assertEquals("1", result.get(0).getId());
         assertEquals("4", result.get(1).getId());
     }
+
     @Test
     @DisplayName("Проверяет обработку некорректных входных данных для получения последних транзакций")
     public void get_last_n_transactions_invalid_input() {
@@ -193,6 +199,7 @@ public class AnalyticsServiceTest {
         result = analyticsService.getLastNTransaction(user, 2);
         assertTrue(result.isEmpty());
     }
+
     @Test
     @DisplayName("Проверяет получение 2 наибольших транзакций для пользователя")
     public void get_top_n_largest_transactions() {
@@ -205,6 +212,7 @@ public class AnalyticsServiceTest {
         assertEquals(TWENTY_DOLLARS, first.getValue());
         assertEquals(TWENTY_DOLLARS, second.getValue());
     }
+
     @Test
     @DisplayName("Проверяет обработку некорректных входных данных для получения наибольших транзакций")
     public void get_top_n_largest_transactions_invalid_input() {
@@ -232,6 +240,7 @@ public class AnalyticsServiceTest {
         result = analyticsService.getTopNLargestTransactions(user, 2);
         assertTrue(result.isEmpty());
     }
+
     @Test
     @DisplayName("Сравнивает производительность последовательного и параллельного стримов")
     public void analyze_performance() {

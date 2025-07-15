@@ -8,4 +8,6 @@
 /dataSources.local.xml
 .idea/
 .target/
+target/
 AccountManagementService.iml
+*.iml

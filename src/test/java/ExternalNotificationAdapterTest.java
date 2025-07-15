@@ -28,11 +28,13 @@ public class ExternalNotificationAdapterTest {
         message = "Тестовое уведомление";
         System.setOut(new PrintStream(outContent));
     }
+
     @AfterEach
     void tearDown() {
         System.setOut(originalOut);
         outContent.reset();
     }
+
     @Test
     @DisplayName("Проверяет отправку SMS при наличии номера телефона")
     void testSendPaymentNotificationSendsSmsWhenPhoneIsProvided() {
@@ -43,6 +45,7 @@ public class ExternalNotificationAdapterTest {
         String expectedOutput = String.format("Отправка SMS от unknown на 1234567890: Тестовое уведомление%s", System.lineSeparator());
         assertEquals(expectedOutput, outContent.toString(), "SMS-сообщение должно быть отправлено с правильным сообщением");
     }
+
     @Test
     @DisplayName("Проверяет отправку email при наличии адреса электронной почты")
     void testSendPaymentNotificationSendsEmailWhenEmailIsProvided() {
