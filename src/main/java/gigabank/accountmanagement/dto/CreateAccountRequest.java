@@ -1,22 +1,18 @@
 package gigabank.accountmanagement.dto;
 
-import lombok.Data;
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import java.math.BigDecimal;
 
-@Data
-public class CreateAccountRequest {
-    @NotNull
-    @Size(min = 3, max = 50)
-    private String ownerName;
+public record CreateAccountRequest(
+        @NotNull(message = "Идентификатор пользователя не может быть пустым")
+        @Positive(message = "Идентификатор пользователя должен быть положительным числом")
+        int userId,
 
-    @Email
-    private String ownerEmail;
-
-    @Pattern(regexp = "\\+[0-9]{10,15}")
-    private String ownerPhone;
-
-    @DecimalMin("0.0")
-    private BigDecimal initialBalance;
+        @NotNull(message = "Начальный баланс не может быть пустым")
+        @Min(value = 0, message = "Начальный баланс не может быть отрицательным")
+        BigDecimal initialBalance
+) {
 }
-

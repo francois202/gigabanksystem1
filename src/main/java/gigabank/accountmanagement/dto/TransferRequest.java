@@ -1,22 +1,20 @@
 package gigabank.accountmanagement.dto;
 
-import lombok.Data;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-@Data
-public class TransferRequest {
-    @NotNull
-    private Integer fromAccountId;
+public record TransferRequest(
+        @NotBlank(message = "Идентификатор отправителя не может быть пустым")
+        String fromId,
 
-    @NotNull
-    private Integer toAccountId;
+        @NotBlank(message = "Идентификатор получателя не может быть пустым")
+        String toId,
 
-    @NotNull
-    @DecimalMin("0.01")
-    private BigDecimal amount;
-
-    private String description;
+        @NotNull(message = "Сумма перевода не может быть пустой")
+        @Min(value = 1, message = "Сумма перевода должна быть больше нуля")
+        BigDecimal amount
+) {
 }
