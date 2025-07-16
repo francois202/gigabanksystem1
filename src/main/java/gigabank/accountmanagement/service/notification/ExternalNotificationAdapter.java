@@ -1,6 +1,7 @@
 package gigabank.accountmanagement.service.notification;
 
 import gigabank.accountmanagement.entity.User;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
  * Преобразует данные User в строковые параметры и отправляет уведомления.
  */
 @Service
+@Qualifier("externalNotification")
 public class ExternalNotificationAdapter implements NotificationAdapter {
     private final ExternalNotificationService externalNotificationService;
 

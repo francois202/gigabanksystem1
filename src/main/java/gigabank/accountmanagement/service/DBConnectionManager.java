@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 
 public class DBConnectionManager {
@@ -66,5 +67,14 @@ public class DBConnectionManager {
 
     public Connection getConnection() {
         return connection;
+    }
+
+    public void executeUpdate(String sql) {
+        try (Statement stmt = getConnection().createStatement()) {
+            stmt.executeUpdate(sql);
+            System.out.println("SQL-команда выполнена: " + sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка выполнения SQL-запроса: " + e.getMessage(), e);
+        }
     }
 }

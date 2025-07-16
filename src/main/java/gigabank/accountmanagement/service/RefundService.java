@@ -5,7 +5,7 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
-import gigabank.accountmanagement.service.notification.NotificationAdapterFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,9 +21,10 @@ public class RefundService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    public RefundService(PaymentGatewayService paymentGatewayService, NotificationAdapterFactory factory) {
+    public RefundService(PaymentGatewayService paymentGatewayService,
+                         @Qualifier("emailNotification") NotificationAdapter notificationAdapter) {
         this.paymentGatewayService = paymentGatewayService;
-        this.notificationAdapter = factory.getNotificationAdapter();
+        this.notificationAdapter = notificationAdapter;
     }
 
     public void processRefund(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {

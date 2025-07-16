@@ -1,9 +1,11 @@
 package gigabank.accountmanagement.service.notification;
 
 import gigabank.accountmanagement.entity.User;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
+@Qualifier("emailNotification")
 public class EmailNotificationAdapter implements NotificationAdapter {
     private final ExternalNotificationService externalNotificationService;
 

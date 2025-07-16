@@ -6,8 +6,8 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
-import gigabank.accountmanagement.service.notification.NotificationAdapterFactory;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,9 +29,10 @@ public class BankAccountService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, NotificationAdapterFactory factory) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService,
+                              @Qualifier("emailNotification") NotificationAdapter notificationAdapter) {
         this.paymentGatewayService = paymentGatewayService;
-        this.notificationAdapter = factory.getNotificationAdapter();
+        this.notificationAdapter = notificationAdapter;
         this.userBankAccounts = new HashMap<>();
     }
 
