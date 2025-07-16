@@ -42,10 +42,38 @@ public class AnalyticsServiceTest {
         bankAccount1 = new BankAccount();
         bankAccount2 = new BankAccount();
 
-        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
-        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
+        Transaction transaction1 = Transaction.builder()
+                .id("1").value(TEN_DOLLARS)
+                .type(TransactionType.PAYMENT)
+                .category(BEAUTY_CATEGORY)
+                .createdDate(TEN_DAYS_AGO)
+                .build();
+
+        Transaction transaction2 = Transaction.builder()
+                .id("2").value(FIFTEEN_DOLLARS)
+                .type(TransactionType.PAYMENT)
+                .category(BEAUTY_CATEGORY)
+                .createdDate(FIVE_MONTHS_AGO)
+                .build();
+
+        Transaction transaction3 = Transaction.builder()
+                .id("3").value(TWENTY_DOLLARS)
+                .type(TransactionType.PAYMENT)
+                .category(FOOD_CATEGORY)
+                .createdDate(THREE_DAYS_AGO)
+                .build();
+
+        Transaction transaction4 = Transaction.builder()
+                .id("4").value(TWENTY_DOLLARS)
+                .type(TransactionType.PAYMENT)
+                .category(EDUCATION_CATEGORY)
+                .createdDate(ONE_DAY_AGO)
+                .build();
+
+        bankAccount1.getTransactions().add(transaction1);
+        bankAccount1.getTransactions().add(transaction2);
+        bankAccount2.getTransactions().add(transaction3);
+        bankAccount2.getTransactions().add(transaction4);
 
         user.getBankAccounts().add(bankAccount1);
         user.getBankAccounts().add(bankAccount2);
@@ -69,7 +97,7 @@ public class AnalyticsServiceTest {
 
         // Нет транзакций за последний месяц
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("5", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
+        bankAccount1.getTransactions().add(Transaction.builder().id("5").value(FIFTEEN_DOLLARS).type(TransactionType.PAYMENT).category(BEAUTY_CATEGORY).createdDate(FIVE_MONTHS_AGO).build());
         result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
         assertEquals(BigDecimal.ZERO, result);
     }
@@ -96,7 +124,7 @@ public class AnalyticsServiceTest {
         // Нет транзакций типа PAYMENT
         user.getBankAccounts().clear();
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+        bankAccount1.getTransactions().add(Transaction.builder().id("6").value(TEN_DOLLARS).type(TransactionType.DEPOSIT).category(BEAUTY_CATEGORY).createdDate(TEN_DAYS_AGO).build());
         user.getBankAccounts().add(bankAccount1);
         result = analyticsService.getTransactionHistorySortedByAmount(user);
         assertTrue(result.isEmpty());
@@ -143,7 +171,7 @@ public class AnalyticsServiceTest {
         // Нет транзакций типа PAYMENT
         user.getBankAccounts().clear();
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+        bankAccount1.getTransactions().add(Transaction.builder().id("6").value(TEN_DOLLARS).type(TransactionType.DEPOSIT).category(BEAUTY_CATEGORY).createdDate(TEN_DAYS_AGO).build());
         user.getBankAccounts().add(bankAccount1);
         result = analyticsService.getTopNLargestTransactions(user, 2);
         assertTrue(result.isEmpty());

@@ -2,7 +2,6 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
-import gigabank.accountmanagement.service.AnalyticsService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +32,10 @@ public class TransactionServiceTest {
         bankAccount1 = new BankAccount();
         bankAccount2 = new BankAccount();
 
-        bankAccount1.getTransactions().add(new Transaction("1", new BigDecimal("100.00"), TransactionType.PAYMENT, "Category1", LocalDateTime.now()));
-        bankAccount1.getTransactions().add(new Transaction("2", new BigDecimal("50.00"), TransactionType.PAYMENT, "Category2", LocalDateTime.now().minusDays(10)));
-        bankAccount2.getTransactions().add(new Transaction("3", new BigDecimal("200.00"), TransactionType.PAYMENT, "Category1", LocalDateTime.now().minusMonths(1)));
-        bankAccount2.getTransactions().add(new Transaction("4", new BigDecimal("150.00"), TransactionType.PAYMENT, "Category3", LocalDateTime.now().minusDays(5)));
+        bankAccount1.getTransactions().add(Transaction.builder().id("1").value(new BigDecimal("100.00")).type(TransactionType.PAYMENT).category("Category1").createdDate(LocalDateTime.now()).build());
+        bankAccount1.getTransactions().add(Transaction.builder().id("2").value(new BigDecimal("50.00")).type(TransactionType.PAYMENT).category("Category2").createdDate(LocalDateTime.now().minusDays(10)).build());
+        bankAccount2.getTransactions().add(Transaction.builder().id("3").value(new BigDecimal("200.00")).type(TransactionType.PAYMENT).category("Category1").createdDate(LocalDateTime.now().minusMonths(1)).build());
+        bankAccount2.getTransactions().add(Transaction.builder().id("4").value(new BigDecimal("150.00")).type(TransactionType.PAYMENT).category("Category3").createdDate(LocalDateTime.now().minusDays(5)).build());
 
         user.getBankAccounts().add(bankAccount1);
         user.getBankAccounts().add(bankAccount2);
@@ -101,8 +100,8 @@ public class TransactionServiceTest {
     @Test
     public void testCreateTransactionList() {
         Supplier<List<Transaction>> transactionSupplier = () -> Arrays.asList(
-                new Transaction("5", new BigDecimal("300.00"), TransactionType.PAYMENT, "Category1", LocalDateTime.now()),
-                new Transaction("6", new BigDecimal("400.00"), TransactionType.PAYMENT, "Category2", LocalDateTime.now())
+                Transaction.builder().id("5").value(new BigDecimal("300.00")).type(TransactionType.PAYMENT).category("Category1").createdDate(LocalDateTime.now()).build(),
+                Transaction.builder().id("6").value(new BigDecimal("400.00")).type(TransactionType.PAYMENT).category("Category2").createdDate(LocalDateTime.now()).build()
         );
         List<Transaction> result = transactionService.createTransactionList(transactionSupplier);
         assertEquals(2, result.size());

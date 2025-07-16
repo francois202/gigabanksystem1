@@ -28,16 +28,16 @@ public class AnalyticsService {
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         BigDecimal totalSum = BigDecimal.ZERO;
 
-        if (bankAccount == null || category.isEmpty()) {
+        if (bankAccount == null || !transactionService.isValidCategory(category)) {
             return totalSum;
         }
 
-        LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
+        LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
 
         totalSum = bankAccount.getTransactions().stream()
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
-                        && transaction.getCategory().equals(category)
-                        && !transaction.getCreatedDate().isBefore(oneMonthAgo))
+                        && StringUtils.equals(transaction.getCategory(), category)
+                        && transaction.getCreatedDate().isAfter(oneMontAgo))
                 .map(Transaction::getValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -54,23 +54,20 @@ public class AnalyticsService {
      */
     public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
         Map<String, BigDecimal> resultMap = new HashMap<>();
-
-        if (user == null || categories.isEmpty()) {
+        Set<String> validCategories = transactionService.validateCategories(categories);
+        if (user == null || validCategories.isEmpty()) {
             return resultMap;
         }
 
-        LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
+        LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
 
-        resultMap = user.getBankAccounts().stream()
-                .flatMap(transaction -> transaction.getTransactions().stream())
+        resultMap =  user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
-                        && categories.contains(transaction.getCategory())
-                        && !transaction.getCreatedDate().isBefore(oneMonthAgo))
-                .collect(Collectors.toMap(
-                        Transaction::getCategory,
-                        Transaction::getValue,
-                        BigDecimal::add,
-                        HashMap::new));
+                        && validCategories.contains(transaction.getCategory())
+                        && transaction.getCreatedDate().isAfter(oneMontAgo))
+                .collect(Collectors.groupingBy(Transaction::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
 
         return resultMap;
     }
@@ -83,19 +80,15 @@ public class AnalyticsService {
      */
     public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
         LinkedHashMap<String, List<Transaction>> resultMap = new LinkedHashMap<>();
-
         if (user == null) {
             return resultMap;
         }
 
-        List<Transaction> transactionsList = user.getBankAccounts().stream()
-                .flatMap(transaction -> transaction.getTransactions().stream())
-                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
-                .sorted(Comparator.comparing(Transaction::getValue).reversed())
-                .toList();
-
-        transactionsList.forEach(transaction -> resultMap.computeIfAbsent(transaction.getCategory(),
-                k -> new ArrayList<>()).add(transaction));
+        resultMap = user.getBankAccounts().stream()
+                .flatMap(bankAccount ->bankAccount.getTransactions().stream())
+                .filter(transaction ->TransactionType.PAYMENT.equals(transaction.getType()))
+                .sorted(Comparator.comparing(Transaction::getValue))
+                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
 
         return resultMap;
     }
@@ -108,19 +101,18 @@ public class AnalyticsService {
      * @return LinkedHashMap, где ключом является идентификатор транзакции, а значением — объект Transaction
      */
     public List<Transaction> getLastNTransactions(User user, int n) {
-        List<Transaction> lastNTransaction = new ArrayList<>();
-
+        List<Transaction> lastTransactions = new ArrayList<>();
         if (user == null) {
-            return lastNTransaction;
+            return lastTransactions;
         }
 
-        lastNTransaction = user.getBankAccounts().stream()
-                .flatMap(transaction -> transaction.getTransactions().stream())
+        lastTransactions = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
                 .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
                 .limit(n)
                 .collect(Collectors.toList());
 
-        return lastNTransaction;
+        return lastTransactions;
     }
 
     /**
@@ -131,49 +123,22 @@ public class AnalyticsService {
      * @return PriorityQueue, где транзакции хранятся в порядке убывания их значения
      */
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
-        PriorityQueue<Transaction> topNLargestTransactions = new PriorityQueue<>(
-                Comparator.comparing(Transaction::getValue).reversed());
+        PriorityQueue<Transaction> transactionPriorityQueue =
+                new PriorityQueue<>(Comparator.comparing(Transaction::getValue));
 
         if (user == null) {
-            return topNLargestTransactions;
+            return transactionPriorityQueue;
         }
 
-        topNLargestTransactions = user.getBankAccounts().stream()
-                .flatMap(transactions -> transactions.getTransactions().stream())
+        transactionPriorityQueue = user.getBankAccounts().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
                 .sorted(Comparator.comparing(Transaction::getValue).reversed())
                 .limit(n)
-                .collect(Collectors.toCollection(() ->
-                        new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())));
+                .collect(Collectors.toCollection
+                        (() -> new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())));
 
-        return topNLargestTransactions;
-    }
-
-    public List<Transaction> analyzePerformance(BankAccount bankAccount) {
-        if (bankAccount == null) {
-            return Collections.emptyList();
-        }
-
-        long startSequential = System.nanoTime();
-        List<Transaction> transactionsSequential = bankAccount.getTransactions().stream()
-                .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
-                .sorted(Comparator.comparing(Transaction::getValue))
-                .toList();
-        long endSequential = System.nanoTime() - startSequential;
-
-        long startParallel = System.nanoTime();
-        List<Transaction> transactionsParallel = bankAccount.getTransactions().parallelStream()
-                .filter(transaction -> TransactionType.DEPOSIT.equals(transaction.getType()))
-                .sorted(Comparator.comparing(Transaction::getValue))
-                .toList();
-        long endParallel = System.nanoTime() - startParallel;
-
-        //Результаты работы
-        System.out.println("Обычный стрим: " + endSequential);
-        System.out.println("Параллельный стрим: " + endParallel);
-        System.out.println("Разница: " + (endSequential - endParallel));
-
-        return transactionsParallel;
+        return transactionPriorityQueue;
     }
 }
 

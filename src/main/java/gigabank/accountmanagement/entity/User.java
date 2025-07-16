@@ -16,5 +16,7 @@ public class User {
     private String middleName;
     private String lastName;
     private LocalDate birthDate;
+    private String email;
+    private String phoneNumber;
     private List<BankAccount> bankAccounts = new ArrayList<>();
 }

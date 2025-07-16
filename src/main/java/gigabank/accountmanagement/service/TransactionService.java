@@ -7,7 +7,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -96,7 +99,4 @@ public class TransactionService {
         return supplier.get();
     }
 
-    public List<Transaction> mergeTransactionList(List<Transaction> list1, List<Transaction> list2, BiFunction<List<Transaction>, List<Transaction>, List<Transaction>> biFunction) {
-        return biFunction.apply(list1, list2);
-    }
 }
