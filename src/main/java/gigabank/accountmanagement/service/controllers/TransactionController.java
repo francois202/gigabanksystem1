@@ -3,7 +3,6 @@ package gigabank.accountmanagement.service.controllers;
 import gigabank.accountmanagement.dto.TransferRequest;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.service.BankAccountService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -20,11 +21,14 @@ import java.util.UUID;
 public class RefundService {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
+    private final DBManager dbManager;
 
     public RefundService(PaymentGatewayService paymentGatewayService,
-                         @Qualifier("emailNotification") NotificationAdapter notificationAdapter) {
+                         @Qualifier("emailNotification") NotificationAdapter notificationAdapter,
+                         DBManager dbManager) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
+        this.dbManager = dbManager;
     }
 
     public void processRefund(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
@@ -42,6 +46,8 @@ public class RefundService {
                     .cardNumber(details.get("cardNumber"))
                     .build();
             bankAccount.getTransactions().add(transaction);
+            dbManager.addTransaction(id, bankAccount.getOwner().getId(), value, "REFUND",
+                    Timestamp.valueOf(LocalDateTime.now()), null, null);
 
             // Отправляем уведомление
             User user = bankAccount.getOwner();

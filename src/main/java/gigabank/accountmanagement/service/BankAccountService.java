@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,11 +29,14 @@ public class BankAccountService {
     private final Map<User, List<BankAccount>> userBankAccounts;
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationAdapter notificationAdapter;
+    private final DBManager dbManager;
 
     public BankAccountService(PaymentGatewayService paymentGatewayService,
-                              @Qualifier("emailNotification") NotificationAdapter notificationAdapter) {
+                              @Qualifier("emailNotification") NotificationAdapter notificationAdapter,
+                              DBManager dbManager) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationAdapter = notificationAdapter;
+        this.dbManager = dbManager;
         this.userBankAccounts = new HashMap<>();
     }
 
@@ -45,6 +49,7 @@ public class BankAccountService {
             BankAccount account = new BankAccount(accountNumber, new ArrayList<>());
             account.setOwner(user);
             account.setBalance(request.initialBalance());
+            dbManager.addBankAccount(user.getId(), request.initialBalance());
             userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
             return account;
         } catch (NumberFormatException e) {
@@ -81,6 +86,8 @@ public class BankAccountService {
                     null, null, null, null, null
             );
             account.getTransactions().add(transaction);
+            dbManager.addTransaction(transaction.getId(), account.getOwner().getId(), amount, "DEPOSIT",
+                    Timestamp.valueOf(LocalDateTime.now()), null, null);
         }
     }
 
@@ -98,6 +105,8 @@ public class BankAccountService {
                     null, null, null, null, null
             );
             account.getTransactions().add(transaction);
+            dbManager.addTransaction(transaction.getId(), account.getOwner().getId(), amount.negate(), "WITHDRAWAL",
+                    Timestamp.valueOf(LocalDateTime.now()), null, null);
         }
     }
 
@@ -137,6 +146,10 @@ public class BankAccountService {
         );
         fromAccount.getTransactions().add(fromTransaction);
         toAccount.getTransactions().add(toTransaction);
+        dbManager.addTransaction(fromTransaction.getId(), fromAccount.getOwner().getId(), amount.negate(), "TRANSFER_OUT",
+                Timestamp.valueOf(LocalDateTime.now()), null, toId);
+        dbManager.addTransaction(toTransaction.getId(), toAccount.getOwner().getId(), amount, "TRANSFER_IN",
+                Timestamp.valueOf(LocalDateTime.now()), fromId, null);
     }
 
     public List<Transaction> getTransactions(String id) {
@@ -158,6 +171,8 @@ public class BankAccountService {
         }
         bankAccount.setBalance(bankAccount.getBalance().subtract(value));
         strategy.process(bankAccount, value, details);
+        dbManager.addTransaction("PAY_" + System.currentTimeMillis(), bankAccount.getOwner().getId(), value.negate(), "PAYMENT",
+                Timestamp.valueOf(LocalDateTime.now()), null, null);
         User user = bankAccount.getOwner();
         String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s. Платеж успешно обработан для счета: %s", value, details.getOrDefault("category", "Не указана"), bankAccount.getId());
         notificationAdapter.sendPaymentNotification(user, message);

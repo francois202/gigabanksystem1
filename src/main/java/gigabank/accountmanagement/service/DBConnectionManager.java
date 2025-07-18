@@ -1,32 +1,35 @@
 package gigabank.accountmanagement.service;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.stereotype.Service;
+
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+@Service
 public class DBConnectionManager {
-    private static DBConnectionManager instance;
-    private Connection connection;
-    private Properties props;
+    private final DataSource dataSource;
 
-    private DBConnectionManager() {
-        props = new Properties();
-        loadProperties();
-        connect();
+    public DBConnectionManager() {
+        Properties props = new Properties();
+        loadProperties(props);
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(props.getProperty("db.url"));
+        config.setUsername(props.getProperty("db.username"));
+        config.setPassword(props.getProperty("db.password"));
+        config.setDriverClassName(props.getProperty("db.driver"));
+        config.addDataSourceProperty("maximumPoolSize", 10); // Настраиваем пул
+        config.addDataSourceProperty("minimumIdle", 5);
+        this.dataSource = new HikariDataSource(config);
     }
 
-    public static synchronized DBConnectionManager getInstance() {
-        if (instance == null) {
-            instance = new DBConnectionManager();
-        }
-        return instance;
-    }
-
-    private void loadProperties() {
+    private void loadProperties(Properties props) {
         try (InputStream input = getClass().getClassLoader().getResourceAsStream("db.properties")) {
             if (input == null) {
                 throw new IOException("Файл db.properties не найден");
@@ -37,44 +40,60 @@ public class DBConnectionManager {
         }
     }
 
-    public void connect() {
-        try {
-            // Загрузка JDBC-драйвера
-            Class.forName(props.getProperty("db.driver"));
-            connection = DriverManager.getConnection(
-                    props.getProperty("db.url"),
-                    props.getProperty("db.username"),
-                    props.getProperty("db.password")
-            );
-            System.out.println("Успешно подключен к базе данных");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Драйвер JDBC не найден", e);
-        } catch (SQLException e) {
-            throw new RuntimeException("Не удалось подключиться к базе данных", e);
-        }
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     public void disconnect() {
-        if (connection != null) {
-            try {
-                connection.close();
-                System.out.println("Соединение с базой данных закрыто");
-            } catch (SQLException e) {
-                throw new RuntimeException("Не удалось закрыть соединение с базой данных", e);
-            }
+        if (dataSource instanceof HikariDataSource) {
+            ((HikariDataSource) dataSource).close();
         }
     }
 
-    public Connection getConnection() {
-        return connection;
+    public void executeUpdate(String sql) {
+        executeUpdateInTransaction(sql);
     }
 
-    public void executeUpdate(String sql) {
-        try (Statement stmt = getConnection().createStatement()) {
-            stmt.executeUpdate(sql);
-            System.out.println("SQL-команда выполнена: " + sql);
+    public void executeUpdateInTransaction(String... sqlStatements) {
+        Connection conn = null;
+        Statement stmt = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+            stmt = conn.createStatement();
+
+            for (String sql : sqlStatements) {
+                stmt.executeUpdate(sql);
+                System.out.println("SQL-команда выполнена: " + sql + " в " + new java.util.Date());
+            }
+
+            conn.commit();
+            System.out.println("Транзакция успешно завершена в " + new java.util.Date());
         } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                    System.err.println("Транзакция откатана из-за ошибки: " + e.getMessage() + " в " + new java.util.Date());
+                } catch (SQLException ex) {
+                    throw new RuntimeException("Ошибка отката транзакции: " + ex.getMessage(), ex);
+                }
+            }
             throw new RuntimeException("Ошибка выполнения SQL-запроса: " + e.getMessage(), e);
+        } finally {
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    System.err.println("Ошибка закрытия Statement: " + e.getMessage());
+                }
+            }
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("Ошибка закрытия соединения: " + e.getMessage());
+                }
+            }
         }
     }
 }
