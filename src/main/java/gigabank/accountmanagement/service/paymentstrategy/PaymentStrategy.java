@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service.paymentstrategy;
+package gigabank.accountmanagement.paymentstrategy;
 
 import gigabank.accountmanagement.entity.BankAccount;
 

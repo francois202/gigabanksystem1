@@ -1,7 +1,8 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement;
 
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import gigabank.accountmanagement.service.BankAccountService;
+import gigabank.accountmanagement.paymentstrategy.PaymentStrategy;
 
 import java.math.BigDecimal;
 import java.util.Map;

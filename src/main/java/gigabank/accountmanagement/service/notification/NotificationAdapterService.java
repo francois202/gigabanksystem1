@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service.notification;
+package gigabank.accountmanagement.service;
 
 public interface NotificationAdapterService {
     String getPhone();

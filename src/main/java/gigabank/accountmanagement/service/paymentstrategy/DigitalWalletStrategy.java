@@ -1,9 +1,9 @@
-package gigabank.accountmanagement.service.paymentstrategy;
+package gigabank.accountmanagement.paymentstrategy;
 
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.service.PaymentGatewayService;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
-import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import gigabank.accountmanagement.service.ExternalNotificationService;
+import gigabank.accountmanagement.notification.NotificationAdapter;
 
 import java.math.BigDecimal;
 import java.util.Map;

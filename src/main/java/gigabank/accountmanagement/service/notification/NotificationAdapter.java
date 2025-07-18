@@ -1,8 +1,11 @@
-package gigabank.accountmanagement.service.notification;
+package gigabank.accountmanagement.notification;
 
 import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.service.NotificationAdapterService;
+import org.springframework.stereotype.Component;
 
-public class NotificationAdapter implements NotificationAdapterService{
+@Component
+public class NotificationAdapter implements NotificationAdapterService {
     private final User user;
 
     public NotificationAdapter(User user) {

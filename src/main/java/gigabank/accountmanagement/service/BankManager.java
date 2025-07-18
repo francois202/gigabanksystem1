@@ -1,12 +1,15 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement;
 
 import gigabank.accountmanagement.dto.UserRequest;
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
-import gigabank.accountmanagement.service.paymentstrategy.BankTransferStrategy;
-import gigabank.accountmanagement.service.paymentstrategy.CardPaymentStrategy;
-import gigabank.accountmanagement.service.paymentstrategy.DigitalWalletStrategy;
-import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import gigabank.accountmanagement.entity.PaymentOptions;
+import gigabank.accountmanagement.service.BankAccountService;
+import gigabank.accountmanagement.service.PaymentGatewayService;
+import gigabank.accountmanagement.service.ExternalNotificationService;
+import gigabank.accountmanagement.paymentstrategy.BankTransferStrategy;
+import gigabank.accountmanagement.paymentstrategy.CardPaymentStrategy;
+import gigabank.accountmanagement.paymentstrategy.DigitalWalletStrategy;
+import gigabank.accountmanagement.paymentstrategy.PaymentStrategy;
 
 import java.util.*;
 
