@@ -4,8 +4,12 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.service.notification.EmailNotificationService;
+import gigabank.accountmanagement.service.notification.SmsNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,10 +19,14 @@ import java.util.stream.Collectors;
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
-@RequiredArgsConstructor
+@Service
 public class AnalyticsService {
     private final TransactionService transactionService;
 
+    @Autowired
+    public AnalyticsService(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
      *

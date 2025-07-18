@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

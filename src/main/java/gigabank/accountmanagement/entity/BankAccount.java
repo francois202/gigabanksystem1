@@ -1,6 +1,7 @@
 package gigabank.accountmanagement.entity;
 
 import lombok.Data;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

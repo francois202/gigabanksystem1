@@ -1,5 +1,7 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.service.notification.NotificationService;
+import gigabank.accountmanagement.service.securityLogging.SecurityLogging;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -7,24 +9,42 @@ import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.notification.ExternalNotificationService;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.logging.Logger;
 
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
+@Service
 public class BankAccountService implements SecurityLogging {
     private final PaymentGatewayService paymentGatewayService;
     private final ExternalNotificationService externalNotificationService;
+    private final NotificationService notificationService;
+    private static final Logger logger = Logger.getLogger(BankAccountService.class.getName());
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService, NotificationAdapter notificationAdapter) {
+    @Autowired
+    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService, NotificationAdapter notificationAdapter,
+                              @Qualifier("EmailNotificationService") NotificationService notificationService) {
         this.paymentGatewayService = paymentGatewayService;
         this.externalNotificationService = externalNotificationService;
+        this.notificationService = notificationService;
     }
+
+    @Value("${notification.email}")
+    private String sendEmail;
+
+    @Value("${notification.phone}")
+    private String sendPhone;
 
     public BankAccount findAccountById(int accountId) {
         return createTestAccount();
@@ -32,6 +52,22 @@ public class BankAccountService implements SecurityLogging {
 
     public void withdraw(BankAccount account, BigDecimal amount) {
         account.setBalance(account.getBalance().subtract(amount));
+    }
+
+    public void withdraw(Integer accountId, BigDecimal amount, String description) {
+        BankAccount account = findAccountById(accountId);
+        account.setBalance(account.getBalance().subtract(amount));
+    }
+
+    public void deposit(int accountId, BigDecimal amount, String description) {
+        BankAccount account = findAccountById(accountId);
+        account.setBalance(account.getBalance().add(amount));
+    }
+
+    public void transfer(int fromAccountId, int toAccountId,
+                         BigDecimal amount, String description) {
+        withdraw(fromAccountId, amount, "Transfer to " + toAccountId + ": " + description);
+        deposit(toAccountId, amount, "Transfer from " + fromAccountId + ": " + description);
     }
 
     @Override
@@ -48,6 +84,7 @@ public class BankAccountService implements SecurityLogging {
         paymentGatewayService.authorize("Платеж по карте", amount);
         externalNotificationService.sendSms(adapter.getPhone(), "Произошел платеж по карте");
         externalNotificationService.sendEmail(adapter.getEmail(), "Информация о платеже", "Произошел платеж по карте");
+        notificationService.sendNotification(account.getOwner().getEmail(), "Произошел платеж по карте");
     }
 
     public void processBankTransfer(BankAccount account, BigDecimal amount, String bankName) {
@@ -110,5 +147,17 @@ public class BankAccountService implements SecurityLogging {
     public void processPayment(BankAccount account, BigDecimal amount, PaymentStrategy strategy, Map<String, String> details) {
         withdraw(account, amount);
         strategy.process(account, amount, details);
+    }
+
+    @PostConstruct
+    public void initMethod() {
+        logger.info("Инициализация перед созданием бина bankAccountService");
+        logger.info("Send email: " + sendEmail);
+        logger.info("Send phone: " + sendPhone);
+    }
+
+    @PreDestroy
+    public void destroyMethod() {
+        logger.info("Инициализация после уничтожения бина bankAccountService");
     }
 }

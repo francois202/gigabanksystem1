@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 @DisplayName("Проверка паттерна Strategy")
 public class BankAccountServiceTest {
