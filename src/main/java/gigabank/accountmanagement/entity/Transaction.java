@@ -1,14 +1,9 @@
 package gigabank.accountmanagement.entity;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Информация о совершенной банковской транзакции
- */
-@Data
+
 public class Transaction {
     private String id;
     private BigDecimal value;
@@ -17,11 +12,47 @@ public class Transaction {
     private BankAccount bankAccount;
     private LocalDateTime createdDate;
 
-    public Transaction(String id, BigDecimal value, TransactionType type, String category,  LocalDateTime createdDate) {
-        this.id = id;
+
+    public Transaction(String generatedId, BigDecimal value, TransactionType type, String category, LocalDateTime createdData) {
+        this.id = generatedId;
         this.value = value;
         this.type = type;
         this.category = category;
+        this.createdDate = createdData;
+    }
+
+    public TransactionType getType() {
+        return type;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public BigDecimal getValue() {
+        return value;
+    }
+
+    public void setType(TransactionType type) {
+        this.type = type;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setValue(BigDecimal bigDecimal) {
+        this.value = bigDecimal;
+    }
+
+    public void setCreatedDate(LocalDateTime createdDate) {
         this.createdDate = createdDate;
     }
+
+
 }
+
