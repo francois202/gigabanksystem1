@@ -26,7 +26,7 @@ public class BankAccountServiceBDImpl {
         String transactionSql = "INSERT INTO transaction (id, user_id, amount, type, date) " +
                 "SELECT ?, user_id, ?, 'DEPOSIT', ? FROM bankaccount WHERE id = ?";
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement updateStmt = conn.prepareStatement(sql);
              PreparedStatement transStmt = conn.prepareStatement(transactionSql)) {
 
@@ -68,7 +68,7 @@ public class BankAccountServiceBDImpl {
         String transactionToSql = "INSERT INTO transaction (id, user_id, amount, type, date, source) " +
                 "SELECT ?, user_id, ?, 'TRANSFER_IN', ?, (SELECT user_id FROM bankaccount WHERE id = ?) FROM bankaccount WHERE id = ?";
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement checkStmt = conn.prepareStatement(checkBalanceSql);
              PreparedStatement updateFromStmt = conn.prepareStatement(updateFromSql);
              PreparedStatement updateToStmt = conn.prepareStatement(updateToSql);
@@ -139,7 +139,7 @@ public class BankAccountServiceBDImpl {
         String transactionSql = "INSERT INTO transaction (id, user_id, amount, type, date) " +
                 "SELECT ?, user_id, 0, 'ACCOUNT_DELETED', ? FROM bankaccount WHERE id = ?";
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement deleteStmt = conn.prepareStatement(deleteSql);
              PreparedStatement transStmt = conn.prepareStatement(transactionSql)) {
 
@@ -170,7 +170,7 @@ public class BankAccountServiceBDImpl {
         String sql = "SELECT id, user_id, amount, type, date, source, target FROM transaction WHERE user_id = ?";
         List<TransactionDTO> transactions = new ArrayList<>();
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userId);

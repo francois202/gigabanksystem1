@@ -105,7 +105,7 @@ public class Application {
 
     private String getUserIdForAccount(String accountId, BankAccountServiceBDImpl bankAccountService) {
         String sql = "SELECT user_id FROM bankaccount WHERE id = ?";
-        try (Connection conn = bankAccountService.getDbManager().getConnection();
+        try (Connection conn = bankAccountService.getDbManager().obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, accountId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -123,7 +123,7 @@ public class Application {
     private List<String> getExistingAccountIds(BankAccountServiceBDImpl bankAccountService) {
         String sql = "SELECT id FROM bankaccount";
         List<String> accountIds = new ArrayList<>();
-        try (Connection conn = bankAccountService.getDbManager().getConnection();
+        try (Connection conn = bankAccountService.getDbManager().obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {

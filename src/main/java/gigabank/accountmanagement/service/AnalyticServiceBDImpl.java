@@ -25,7 +25,7 @@ public class AnalyticServiceBDImpl {
                 "WHERE t.type = 'PAYMENT' AND t.category = ? AND t.date >= ? AND ba.user_id = ?";
         LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, category);
@@ -57,7 +57,7 @@ public class AnalyticServiceBDImpl {
                 "GROUP BY category";
         LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setTimestamp(1, Timestamp.valueOf(oneMonthAgo));
@@ -86,7 +86,7 @@ public class AnalyticServiceBDImpl {
                 "FROM transaction t JOIN bankaccount ba ON t.user_id = ba.user_id " +
                 "WHERE t.type = 'PAYMENT' AND ba.user_id = ?";
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userId);
@@ -122,7 +122,7 @@ public class AnalyticServiceBDImpl {
                 "WHERE user_id = ? ORDER BY date DESC LIMIT ?";
         List<TransactionDTO> transactions = new ArrayList<>();
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userId);
@@ -153,7 +153,7 @@ public class AnalyticServiceBDImpl {
                 "WHERE user_id = ? AND type = 'PAYMENT' ORDER BY amount DESC LIMIT ?";
         PriorityQueue<TransactionDTO> result = new PriorityQueue<>(Comparator.comparing(TransactionDTO::getAmount).reversed());
 
-        try (Connection conn = dbManager.getConnection();
+        try (Connection conn = dbManager.obtainConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, userId);

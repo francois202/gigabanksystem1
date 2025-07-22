@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class RefundService {
         this.dbManager = dbManager;
     }
 
-    public void processRefund(BankAccount bankAccount, BigDecimal value, Map<String, String> details) {
+    public void processRefund(BankAccount bankAccount, BigDecimal value, Map<String, String> details) throws SQLException {
         boolean success = paymentGatewayService.processRefund(value, details);
         if (success) {
             String id = UUID.randomUUID().toString();

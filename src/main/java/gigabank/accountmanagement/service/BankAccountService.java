@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -54,6 +55,8 @@ public class BankAccountService {
             return account;
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Неверный формат userId");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -65,7 +68,7 @@ public class BankAccountService {
                 .orElse(null);
     }
 
-    public void deposit(String id, BigDecimal amount) {
+    public void deposit(String id, BigDecimal amount) throws SQLException {
         BankAccount account = getAccount(id);
         if (account == null) {
             throw new ResponseStatusException(
@@ -91,7 +94,7 @@ public class BankAccountService {
         }
     }
 
-    public void withdraw(String id, BigDecimal amount) {
+    public void withdraw(String id, BigDecimal amount) throws SQLException {
         BankAccount account = getAccount(id);
         if (account != null && account.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
             account.setBalance(account.getBalance().subtract(amount));
@@ -110,7 +113,7 @@ public class BankAccountService {
         }
     }
 
-    public void transfer(String fromId, String toId, BigDecimal amount) {
+    public void transfer(String fromId, String toId, BigDecimal amount) throws SQLException {
         BankAccount fromAccount = getAccount(fromId);
         BankAccount toAccount = getAccount(toId);
 
@@ -157,7 +160,7 @@ public class BankAccountService {
         return account != null ? account.getTransactions() : null;
     }
 
-    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
+    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) throws SQLException {
         Objects.requireNonNull(bankAccount, "BankAccount must not be null");
         Objects.requireNonNull(strategy, "PaymentStrategy must not be null");
         Objects.requireNonNull(details, "Details map must not be null");

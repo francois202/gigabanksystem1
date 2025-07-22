@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.SQLException;
+
 
 @RestController
 @RequestMapping("/accounts")
@@ -44,13 +46,13 @@ public class BankAccountController {
     }
 
     @PostMapping("/{id}/deposit")
-    public ResponseEntity<BankAccount> deposit(@PathVariable String id, @Valid @RequestBody AmountRequest request) {
+    public ResponseEntity<BankAccount> deposit(@PathVariable String id, @Valid @RequestBody AmountRequest request) throws SQLException {
         bankAccountService.deposit(id, request.amount());
         return ResponseEntity.ok(bankAccountService.getAccount(id));
     }
 
     @PostMapping("/{id}/withdraw")
-    public ResponseEntity<BankAccount> withdraw(@PathVariable String id, @Valid @RequestBody AmountRequest request) {
+    public ResponseEntity<BankAccount> withdraw(@PathVariable String id, @Valid @RequestBody AmountRequest request) throws SQLException {
         BankAccount account = bankAccountService.getAccount(id);
         if (account == null) {
             throw new AccountNotFoundException("Аккаунт с ID " + id + " не найден");

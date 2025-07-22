@@ -3,43 +3,66 @@ package gigabank.accountmanagement.service;
 import gigabank.accountmanagement.dto.BankAccountDTO;
 import gigabank.accountmanagement.dto.TransactionDTO;
 import gigabank.accountmanagement.dto.UserDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class DBManager {
+    private static final Logger logger = LoggerFactory.getLogger(DBManager.class);
     private final DBConnectionManager dbManager;
 
-    public DBManager(DBConnectionManager dbManager) {
+    private static final String INSERT_USER_SQL = "INSERT INTO \"users\" (user_id, username, email, phone) VALUES (?, ?, ?, ?)";
+    private static final String SELECT_USERS_SQL = "SELECT user_id, username, email, phone FROM \"users\"";
+    private static final String INSERT_BANK_ACCOUNT_SQL = "INSERT INTO \"bankaccount\" (id, number, user_id, balance) VALUES (?, ?, ?, ?)";
+    private static final String DELETE_BANK_ACCOUNTS_SQL = "DELETE FROM \"bankaccount\" WHERE user_id = ?";
+    private static final String DELETE_USER_SQL = "DELETE FROM \"users\" WHERE user_id = ?";
+    private static final String UPDATE_BALANCE_SQL = "UPDATE \"bankaccount\" SET balance = ? WHERE id = ?";
+    private static final String INSERT_TRANSACTION_SQL = "INSERT INTO \"transaction\" (id, user_id, amount, type, date, source, target) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    private static final String SELECT_TRANSACTIONS_SQL = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\"";
+    private static final String SELECT_TRANSACTION_BY_ID_SQL = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\" WHERE id = ?";
+    private static final String SELECT_ACCOUNTS_BY_USER_SQL = "SELECT id, number, user_id, balance FROM \"bankaccount\" WHERE user_id = ?";
+    private static final String SELECT_TRANSACTIONS_BY_DATE_RANGE_SQL = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\" WHERE date BETWEEN ? AND ?";
+
+    DBManager(DBConnectionManager dbManager) {
+        if (dbManager == null) {
+            throw new IllegalArgumentException("DBConnectionManager cannot be null");
+        }
         this.dbManager = dbManager;
     }
 
-    public void addUser(String username, String email, String phone) {
+    public void addUser(String username, String email, String phone) throws SQLException {
         String userId = UUID.randomUUID().toString();
-        String sql = "INSERT INTO \"users\" (user_id, username, email, phone) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_USER_SQL)) {
             stmt.setString(1, userId);
             stmt.setString(2, username);
             stmt.setString(3, email);
             stmt.setString(4, phone);
             stmt.executeUpdate();
-            System.out.println("Пользователь добавлен: " + username + ", user_id: " + userId + " в " + new java.util.Date());
+            logger.info("Пользователь добавлен: {}, user_id: {} в {}", username, userId, new java.util.Date());
         } catch (SQLException e) {
-            System.err.println("Ошибка добавления пользователя: " + e.getMessage() + " в " + new java.util.Date());
+            if (e.getSQLState().equals("23505")) {
+                throw new SQLException("Пользователь " + userId + " уже существует", e);
+            }
+            logger.error("Ошибка добавления пользователя: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка добавления пользователя", e);
         }
     }
 
     public List<UserDTO> getUsers() {
         List<UserDTO> users = new ArrayList<>();
-        String sql = "SELECT user_id, username, email, phone FROM \"users\"";
-        try (Statement stmt = dbManager.getConnection().createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (Statement stmt = dbManager.obtainConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(SELECT_USERS_SQL)) {
             while (rs.next()) {
                 UserDTO user = new UserDTO(
                         rs.getString("user_id"),
@@ -49,79 +72,65 @@ public class DBManager {
                 );
                 users.add(user);
             }
-            System.out.println("Получено " + users.size() + " пользователей в " + new java.util.Date());
+            logger.info("Получено {} пользователей в {}", users.size(), new java.util.Date());
             return users;
         } catch (SQLException e) {
-            System.err.println("Ошибка получения пользователей: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка получения пользователей: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка получения пользователей", e);
         }
     }
 
-    public void addBankAccount(String userId, BigDecimal initialBalance) {
+    public void addBankAccount(String userId, BigDecimal initialBalance) throws SQLException {
         String accountId = UUID.randomUUID().toString();
         String accountNumber = "ACC_" + UUID.randomUUID().toString();
-        String sql = "INSERT INTO \"bankaccount\" (id, number, user_id, balance) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_BANK_ACCOUNT_SQL)) {
             stmt.setString(1, accountId);
             stmt.setString(2, accountNumber);
             stmt.setString(3, userId);
             stmt.setBigDecimal(4, initialBalance);
             stmt.executeUpdate();
-            System.out.println("Счёт добавлен: " + accountId + ", баланс: " + initialBalance + " в " + new java.util.Date());
+            logger.info("Счёт добавлен: {}, баланс: {} в {}",accountId, initialBalance, new java.util.Date());
         } catch (SQLException e) {
-            System.err.println("Ошибка добавления счёта: " + e.getMessage() + " в " + new java.util.Date());
+            if (e.getSQLState().equals("23505")) {
+                throw new SQLException("Банковский счёт с ID " + userId + " уже существует", e);
+            }
+            logger.error("Ошибка добавления счёта: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка добавления счёта", e);
         }
     }
 
-    public void deleteUser(String userId) {
-        String[] sqlStatements = {
-                "DELETE FROM \"bankaccount\" WHERE user_id = ?",
-                "DELETE FROM \"users\" WHERE user_id = ?"
-        };
-        try (Connection conn = dbManager.getConnection()) {
-            conn.setAutoCommit(false);
-            for (String sql : sqlStatements) {
-                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setString(1, userId);
-                    stmt.executeUpdate();
-                }
-            }
-            conn.commit();
-            System.out.println("Пользователь и его счёты удалены: " + userId + " в " + new java.util.Date());
+    public void deleteUser(String userId) throws SQLException {
+        List<Object[]> queries = List.of(
+                new Object[]{DELETE_BANK_ACCOUNTS_SQL, userId},
+                new Object[]{DELETE_USER_SQL, userId}
+        );
+        try {
+            dbManager.executeUpdateInTransaction(queries);
+            logger.info("Пользователь и его счёта удалены: {} в {}", userId, new java.util.Date());
         } catch (SQLException e) {
-            try {
-                if (dbManager.getConnection() != null) {
-                    dbManager.getConnection().rollback();
-                    System.err.println("Транзакция откатана из-за ошибки: " + e.getMessage() + " в " + new java.util.Date());
-                }
-            } catch (SQLException ex) {
-                System.err.println("Ошибка отката транзакции: " + ex.getMessage());
-            }
-            throw new RuntimeException("Ошибка удаления пользователя", e);
+            logger.error("Ошибка удаления пользователя: {} в {}", e.getMessage(), new java.util.Date());
+            throw e;
         }
     }
 
     public void updateBalance(String accountId, BigDecimal newBalance) {
-        String sql = "UPDATE \"bankaccount\" SET balance = ? WHERE id = ?";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(UPDATE_BALANCE_SQL)) {
             stmt.setBigDecimal(1, newBalance);
             stmt.setString(2, accountId);
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
-                System.out.println("Баланс обновлён для счёта: " + accountId + ", новый баланс: " + newBalance + " в " + new java.util.Date());
+                logger.info("Баланс обновлён для счёта: {}, новый баланс: {} в {}", accountId, newBalance, new java.util.Date());
             } else {
-                System.out.println("Счёт не найден: " + accountId + " в " + new java.util.Date());
+                logger.warn("Счёт не найден: {} в {}", accountId, new java.util.Date());
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка обновления баланса: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка обновления баланса: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка обновления баланса", e);
         }
     }
 
-    public void addTransaction(String transactionId, String userId, BigDecimal amount, String type, Timestamp date, String source, String target) {
-        String sql = "INSERT INTO \"transaction\" (id, user_id, amount, type, date, source, target) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+    public void addTransaction(String transactionId, String userId, BigDecimal amount, String type, Timestamp date, String source, String target) throws SQLException {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_TRANSACTION_SQL)) {
             stmt.setString(1, transactionId);
             stmt.setString(2, userId);
             stmt.setBigDecimal(3, amount);
@@ -130,18 +139,21 @@ public class DBManager {
             stmt.setString(6, source);
             stmt.setString(7, target);
             stmt.executeUpdate();
-            System.out.println("Транзакция добавлена: " + transactionId + ", сумма: " + amount + " в " + new java.util.Date());
+            logger.info("Транзакция добавлена: {}, сумма: {} в {}",transactionId, amount, new java.util.Date());
         } catch (SQLException e) {
-            System.err.println("Ошибка добавления транзакции: " + e.getMessage() + " в " + new java.util.Date());
+            if (e.getSQLState().equals("23505")) {
+                logger.error("Транзакция с ID {} уже существует: {}", transactionId, e.getMessage());
+                throw new SQLException("Транзакция с ID " + transactionId + " уже существует", e);
+            }
+            logger.error("Ошибка добавления транзакции: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка добавления транзакции", e);
         }
     }
 
     public List<TransactionDTO> getTransactions() {
         List<TransactionDTO> transactions = new ArrayList<>();
-        String sql = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\"";
-        try (Statement stmt = dbManager.getConnection().createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (Statement stmt = dbManager.obtainConnection().createStatement();
+             ResultSet rs = stmt.executeQuery(SELECT_TRANSACTIONS_SQL)) {
             while (rs.next()) {
                 TransactionDTO transaction = new TransactionDTO(
                         rs.getString("id"),
@@ -154,17 +166,16 @@ public class DBManager {
                 );
                 transactions.add(transaction);
             }
-            System.out.println("Получено " + transactions.size() + " транзакций в " + new java.util.Date());
+            logger.info("Получено {} транзакций в {}", transactions.size(), new java.util.Date());
             return transactions;
         } catch (SQLException e) {
-            System.err.println("Ошибка получения транзакций: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка получения транзакций: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка получения транзакций", e);
         }
     }
 
     public TransactionDTO getTransaction(String transactionId) {
-        String sql = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\" WHERE id = ?";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(SELECT_TRANSACTION_BY_ID_SQL)) {
             stmt.setString(1, transactionId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -177,23 +188,22 @@ public class DBManager {
                             rs.getString("source"),
                             rs.getString("target")
                     );
-                    System.out.println("Транзакция найдена: " + transactionId + " в " + new java.util.Date());
+                    logger.info("Транзакция найдена: {} в {}", transactionId, new java.util.Date());
                     return transaction;
                 } else {
-                    System.out.println("Транзакция не найдена: " + transactionId + " в " + new java.util.Date());
+                    logger.warn("Транзакция не найдена: {} в {}", transactionId, new java.util.Date());
                     return null;
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Ошибка получения транзакции: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка получения транзакции: {} в {}", e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка получения транзакции", e);
         }
     }
 
     public List<BankAccountDTO> getAccountsByUser(String userId) {
         List<BankAccountDTO> accounts = new ArrayList<>();
-        String sql = "SELECT id, number, user_id, balance FROM \"bankAccount\" WHERE user_id = ?";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(SELECT_ACCOUNTS_BY_USER_SQL)) {
             stmt.setString(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -206,18 +216,17 @@ public class DBManager {
                     accounts.add(account);
                 }
             }
-            System.out.println("Получено " + accounts.size() + " счетов для пользователя " + userId + " в " + new java.util.Date());
+            logger.info("Получено {} счетов для пользователя: {} в {}", accounts.size(), userId, new java.util.Date());
             return accounts;
         } catch (SQLException e) {
-            System.err.println("Ошибка получения счетов: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка получения счетов: {} в {}",e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка получения счетов", e);
         }
     }
 
     public List<TransactionDTO> getTransactionsByDateRange(Timestamp startDate, Timestamp endDate) {
         List<TransactionDTO> transactions = new ArrayList<>();
-        String sql = "SELECT id, user_id, amount, type, date, source, target FROM \"transaction\" WHERE date BETWEEN ? AND ?";
-        try (PreparedStatement stmt = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(SELECT_TRANSACTIONS_BY_DATE_RANGE_SQL)) {
             stmt.setTimestamp(1, startDate);
             stmt.setTimestamp(2, endDate);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -234,10 +243,10 @@ public class DBManager {
                     transactions.add(transaction);
                 }
             }
-            System.out.println("Получено " + transactions.size() + " транзакций за период с " + startDate + " по " + endDate + " в " + new java.util.Date());
+            logger.info("Получено {} транзакций за период с {} по {} в {}", transactions.size(), startDate, endDate, new java.util.Date());
             return transactions;
         } catch (SQLException e) {
-            System.err.println("Ошибка получения транзакций по дате: " + e.getMessage() + " в " + new java.util.Date());
+            logger.error("Ошибка получения транзакций по дате: {} в {}",e.getMessage(), new java.util.Date());
             throw new RuntimeException("Ошибка получения транзакций по дате", e);
         }
     }

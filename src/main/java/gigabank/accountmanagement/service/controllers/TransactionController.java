@@ -6,6 +6,7 @@ import gigabank.accountmanagement.service.BankAccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
 import java.util.List;
 
 @RestController
@@ -19,7 +20,7 @@ public class TransactionController {
     }
 
     @PostMapping("/transfer")
-    public ResponseEntity<String> transfer(@RequestBody TransferRequest request) {
+    public ResponseEntity<String> transfer(@RequestBody TransferRequest request) throws SQLException {
         bankAccountService.transfer(request.fromId(), request.toId(), request.amount());
         return ResponseEntity.ok().build();
     }

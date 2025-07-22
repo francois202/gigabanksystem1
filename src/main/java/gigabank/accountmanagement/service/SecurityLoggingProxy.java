@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -21,7 +22,7 @@ public class SecurityLoggingProxy {
         this.bankAccountService = bankAccountService;
     }
 
-    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) {
+    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) throws SQLException {
         System.out.println("Проверка доступа для выполнения операции...");
         if (testAccessGranted) {
             System.out.println("Доступ разрешён. Выполняем операцию...");

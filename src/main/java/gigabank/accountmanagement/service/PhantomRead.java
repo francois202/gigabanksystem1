@@ -22,7 +22,7 @@ public class PhantomRead {
     public void transactionRead() {
         Connection conn = null;
         try {
-            conn = dbManager.getConnection();
+            conn = dbManager.obtainConnection();
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
 
@@ -68,7 +68,7 @@ public class PhantomRead {
     public void transactionWrite() {
         Connection conn = null;
         try {
-            conn = dbManager.getConnection();
+            conn = dbManager.obtainConnection();
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
 

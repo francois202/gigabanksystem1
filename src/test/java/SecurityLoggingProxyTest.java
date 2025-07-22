@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class SecurityLoggingProxyTest {
     private Map<String, String> details;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
         bankAccount = new BankAccount("1", new ArrayList<>());
         bankAccount.setBalance(new BigDecimal("1000.00"));
@@ -44,7 +45,7 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет успешную обработку платежа при разрешённом доступе")
-    void testProcessPaymentSucceedsWhenAccessGranted() {
+    void testProcessPaymentSucceedsWhenAccessGranted() throws SQLException {
         securityLoggingProxy.setTestAccessGranted(true);
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
         verify(bankAccountService, atLeastOnce()).processPayment(bankAccount, paymentAmount, paymentStrategy, details);
@@ -52,7 +53,7 @@ public class SecurityLoggingProxyTest {
 
     @Test
     @DisplayName("Проверяет отсутствие обработки платежа при запрещённом доступе")
-    void testProcessPaymentDoesNotExecuteWhenAccessDenied() {
+    void testProcessPaymentDoesNotExecuteWhenAccessDenied() throws SQLException {
         securityLoggingProxy.setTestAccessGranted(false);
         securityLoggingProxy.processPayment(bankAccount, paymentAmount, paymentStrategy, details);
         verify(bankAccountService, never()).processPayment(any(BankAccount.class), any(BigDecimal.class), any(PaymentStrategy.class), any(Map.class));
