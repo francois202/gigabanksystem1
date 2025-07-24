@@ -1,96 +1,184 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.dto.CreateAccountRequest;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
+import gigabank.accountmanagement.service.notification.NotificationAdapter;
+import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
+@Service
 public class BankAccountService {
+    private final Map<User, List<BankAccount>> userBankAccounts;
     private final PaymentGatewayService paymentGatewayService;
-    private final ExternalNotificationService externalNotificationService;
+    private final NotificationAdapter notificationAdapter;
+    private final DBManager dbManager;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService,
+                              @Qualifier("emailNotification") NotificationAdapter notificationAdapter,
+                              DBManager dbManager) {
         this.paymentGatewayService = paymentGatewayService;
-        this.externalNotificationService = externalNotificationService;
+        this.notificationAdapter = notificationAdapter;
+        this.dbManager = dbManager;
+        this.userBankAccounts = new HashMap<>();
     }
 
-    public BankAccount findAccountById(int accountId) {
-        return createTestAccount();
+    public BankAccount createAccount(CreateAccountRequest request) {
+        try {
+            Integer userId = request.userId();
+            User user = new User();
+            user.setId(String.valueOf(userId));
+            String accountNumber = "ACC_" + System.currentTimeMillis();
+            BankAccount account = new BankAccount(accountNumber, new ArrayList<>());
+            account.setOwner(user);
+            account.setBalance(request.initialBalance());
+            dbManager.addBankAccount(user.getId(), request.initialBalance());
+            userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
+            return account;
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Неверный формат userId");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void withdraw(BankAccount account, BigDecimal amount) {
-        account.setBalance(account.getBalance().subtract(amount));
+    public BankAccount getAccount(String id) {
+        return userBankAccounts.values().stream()
+                .flatMap(List::stream)
+                .filter(a -> a.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
-    public void processCardPayment(BankAccount account, BigDecimal amount, String cardNumber, String merchantName) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed card payment for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+    public void deposit(String id, BigDecimal amount) throws SQLException {
+        BankAccount account = getAccount(id);
+        if (account == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Учетная запись не найдена",
+                    new IllegalArgumentException("Неверный ID учетной записи")
+            );
+        }
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            account.setBalance(account.getBalance().add(amount));
+            Transaction transaction = new Transaction(
+                    "DEP_" + System.currentTimeMillis(),
+                    amount,
+                    TransactionType.DEPOSIT,
+                    "Deposit",
+                    account,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            account.getTransactions().add(transaction);
+            dbManager.addTransaction(transaction.getId(), account.getOwner().getId(), amount, "DEPOSIT",
+                    Timestamp.valueOf(LocalDateTime.now()), null, null);
+        }
     }
 
-    public void processBankTransfer(BankAccount account, BigDecimal amount, String bankName) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed bank transfer for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+    public void withdraw(String id, BigDecimal amount) throws SQLException {
+        BankAccount account = getAccount(id);
+        if (account != null && account.getBalance().compareTo(amount) >= 0 && amount.compareTo(BigDecimal.ZERO) > 0) {
+            account.setBalance(account.getBalance().subtract(amount));
+            Transaction transaction = new Transaction(
+                    "WDR_" + System.currentTimeMillis(),
+                    amount,
+                    TransactionType.WITHDRAWAL,
+                    "Withdrawal",
+                    account,
+                    LocalDateTime.now(),
+                    null, null, null, null, null
+            );
+            account.getTransactions().add(transaction);
+            dbManager.addTransaction(transaction.getId(), account.getOwner().getId(), amount.negate(), "WITHDRAWAL",
+                    Timestamp.valueOf(LocalDateTime.now()), null, null);
+        }
     }
 
-    public void processWalletPayment(BankAccount account, BigDecimal amount, String walletId) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed wallet payment for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
-    }
+    public void transfer(String fromId, String toId, BigDecimal amount) throws SQLException {
+        BankAccount fromAccount = getAccount(fromId);
+        BankAccount toAccount = getAccount(toId);
 
-    public static BankAccount createTestAccount() {
-        User testUser = new User();
-        testUser.setId("user123");
-        testUser.setFirstName("John");
-        testUser.setMiddleName("K");
-        testUser.setLastName("Doe");
-        testUser.setBirthDate(LocalDateTime.now().minusYears(25).toLocalDate());
-        testUser.setEmail("john.doe@example.com");
-        testUser.setPhoneNumber("+1234567890");
+        if (fromAccount == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Счёт отправителя с ID " + fromId + " не найден");
+        }
+        if (toAccount == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Счёт получателя с ID " + toId + " не найден");
+        }
+        if (fromAccount.getBalance().compareTo(amount) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недостаточно средств на счёте " + fromId);
+        }
+        fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+        toAccount.setBalance(toAccount.getBalance().add(amount));
 
-        BankAccount account = new BankAccount();
-        account.setId("acc123");
-        account.setBalance(new BigDecimal("5000.00"));
-        account.setOwner(testUser);
-
-        Transaction transaction1 = new Transaction(
-                "tx001",
-                new BigDecimal("100.00"),
-                TransactionType.PAYMENT,
-                "Electronics",
-                LocalDateTime.now().minusDays(5)
+        Transaction fromTransaction = new Transaction(
+                "TRF_" + System.currentTimeMillis() + "_FROM",
+                amount,
+                TransactionType.TRANSFER,
+                "Transfer Out",
+                fromAccount,
+                LocalDateTime.now(),
+                null, null, null, null, null
         );
-
-        Transaction transaction2 = new Transaction(
-                "tx002",
-                new BigDecimal("200.00"),
-                TransactionType.DEPOSIT,
-                "Groceries",
-                LocalDateTime.now().minusDays(2)
+        Transaction toTransaction = new Transaction(
+                "TRF_" + System.currentTimeMillis() + "_TO",
+                amount,
+                TransactionType.TRANSFER,
+                "Transfer In",
+                toAccount,
+                LocalDateTime.now(),
+                null, null, null, null, null
         );
+        fromAccount.getTransactions().add(fromTransaction);
+        toAccount.getTransactions().add(toTransaction);
+        dbManager.addTransaction(fromTransaction.getId(), fromAccount.getOwner().getId(), amount.negate(), "TRANSFER_OUT",
+                Timestamp.valueOf(LocalDateTime.now()), null, toId);
+        dbManager.addTransaction(toTransaction.getId(), toAccount.getOwner().getId(), amount, "TRANSFER_IN",
+                Timestamp.valueOf(LocalDateTime.now()), fromId, null);
+    }
 
-        account.getTransactions().addAll(List.of(transaction1, transaction2));
+    public List<Transaction> getTransactions(String id) {
+        BankAccount account = getAccount(id);
+        return account != null ? account.getTransactions() : null;
+    }
 
-        return account;
+    public void processPayment(BankAccount bankAccount, BigDecimal value, PaymentStrategy strategy, Map<String, String> details) throws SQLException {
+        Objects.requireNonNull(bankAccount, "BankAccount must not be null");
+        Objects.requireNonNull(strategy, "PaymentStrategy must not be null");
+        Objects.requireNonNull(details, "Details map must not be null");
+
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Payment value must be positive and non-null");
+        }
+        boolean success = paymentGatewayService.processPayment(value, details);
+        if (!success) {
+            throw new RuntimeException("Payment could not be processed: check the transaction details -" + details);
+        }
+        bankAccount.setBalance(bankAccount.getBalance().subtract(value));
+        strategy.process(bankAccount, value, details);
+        dbManager.addTransaction("PAY_" + System.currentTimeMillis(), bankAccount.getOwner().getId(), value.negate(), "PAYMENT",
+                Timestamp.valueOf(LocalDateTime.now()), null, null);
+        User user = bankAccount.getOwner();
+        String message = String.format("Платеж на сумму %s успешно выполнен. Категория: %s. Платеж успешно обработан для счета: %s", value, details.getOrDefault("category", "Не указана"), bankAccount.getId());
+        notificationAdapter.sendPaymentNotification(user, message);
+        System.out.println(message);
     }
 }
