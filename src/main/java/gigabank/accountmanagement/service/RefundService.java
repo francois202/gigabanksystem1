@@ -38,7 +38,7 @@ public class RefundService {
             String id = UUID.randomUUID().toString();
             Transaction transaction = Transaction.builder()
                     .id(id)
-                    .value(value.negate()) // Отрицательная сумма для возврата
+                    .value(value.negate())
                     .type(TransactionType.REFUND)
                     .category("Refund")
                     .bankAccount(bankAccount)
@@ -50,7 +50,6 @@ public class RefundService {
             dbManager.addTransaction(id, bankAccount.getOwner().getId(), value, "REFUND",
                     Timestamp.valueOf(LocalDateTime.now()), null, null);
 
-            // Отправляем уведомление
             User user = bankAccount.getOwner();
             String message = String.format("Возврат средств на сумму %s успешно выполнен. Merchant: %s", value, details.getOrDefault("merchantName", "Не указан"));
             notificationAdapter.sendRefundNotification(user, message);
