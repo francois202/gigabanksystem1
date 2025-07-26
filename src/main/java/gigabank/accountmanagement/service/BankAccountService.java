@@ -33,8 +33,7 @@ public class BankAccountService implements SecurityLogging {
     private static final Logger logger = Logger.getLogger(BankAccountService.class.getName());
 
     @Autowired
-    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService, NotificationAdapter notificationAdapter,
-                              @Qualifier("EmailNotificationService") NotificationService notificationService) {
+    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService, @Qualifier("smsNotificationService") NotificationService notificationService) {
         this.paymentGatewayService = paymentGatewayService;
         this.externalNotificationService = externalNotificationService;
         this.notificationService = notificationService;

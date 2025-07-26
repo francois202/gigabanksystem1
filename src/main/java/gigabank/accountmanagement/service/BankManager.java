@@ -11,79 +11,49 @@ import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
 
 import java.util.*;
 
-public class BankManager {
-    private final BankManager bankManager;
-    private final BankAccountService bankAccountService;
-    private Map<PaymentOptions, PaymentStrategy> strategy = new HashMap<>();
-    private final String CARD = "CARD";
-    private final String BANK = "BANK";
-    private final String WALLET = "WALLET";
+import static gigabank.accountmanagement.entity.PaymentOptions.*;
 
-    public BankManager(BankManager bankManager, BankAccountService bankAccountService) {
-        this.bankManager = bankManager;
+public class BankManager {
+    private final BankAccountService bankAccountService;
+    private Map<PaymentOptions, PaymentStrategy> strategy;
+
+    public BankManager(BankAccountService bankAccountService) {
         this.bankAccountService = bankAccountService;
         PaymentGatewayService paymentGatewayService = PaymentGatewayService.getInstance();
         ExternalNotificationService externalNotificationService = new ExternalNotificationService();
         this.strategy = Map.of(
-                PaymentOptions.CARD, new CardPaymentStrategy(paymentGatewayService, externalNotificationService),
-                PaymentOptions.BANK, new BankTransferStrategy(paymentGatewayService, externalNotificationService),
-                PaymentOptions.WALLET, new DigitalWalletStrategy(paymentGatewayService, externalNotificationService)
+                CARD, new CardPaymentStrategy(paymentGatewayService, externalNotificationService),
+                BANK, new BankTransferStrategy(paymentGatewayService, externalNotificationService),
+                WALLET, new DigitalWalletStrategy(paymentGatewayService, externalNotificationService)
         );
     }
 
-    public void payment(List<UserRequest> userRequests) {
-        for (UserRequest request : userRequests) {
-            BankAccount bankAccount = bankAccountService.findAccountById(request.getAccountId());
-            switch (request.getPaymentType()) {
-                case CARD -> {
-                    System.out.println("card pay " + bankAccount.getId());
-                    bankManager.paymentCard(userRequests);
-                }
-                case BANK -> {
-                    System.out.println("bank pay " + bankAccount.getId());
-                    bankManager.paymentBank(userRequests);
-                }
-                case WALLET -> {
-                    System.out.println("wallet pay " + bankAccount.getId());
-                    bankManager.paymentWallet(userRequests);
-                }
-            }
-        }
-    }
-
-    private void paymentCard(List<UserRequest> userRequests) {
+    public void doWork(List<UserRequest> userRequests) {
         for (UserRequest request : userRequests) {
             BankAccount bankAccount = bankAccountService.findAccountById(request.getAccountId());
             if (bankAccount == null) {
                 System.out.println("no access " + request.getAccountId());
-                return;
+                continue;
             }
 
-            bankAccountService.processPayment(bankAccount, request.getAmount(), strategy.get(PaymentOptions.CARD), Collections.emptyMap());
-        }
-    }
+            try {
+                PaymentOptions option = PaymentOptions.valueOf(request.getPaymentType()); // преобразуем строку в enum
+                PaymentStrategy paymentStrategy = strategy.get(option);
 
-    private void paymentBank(List<UserRequest> userRequests) {
-        for (UserRequest request : userRequests) {
-            BankAccount bankAccount = bankAccountService.findAccountById(request.getAccountId());
-            if (bankAccount == null) {
-                System.out.println("no access " + request.getAccountId());
-                return;
+                if (paymentStrategy == null) {
+                    System.out.println("Unsupported payment option: " + request.getPaymentType());
+                    continue;
+                }
+
+                bankAccountService.processPayment(
+                        bankAccount,
+                        request.getAmount(),
+                        paymentStrategy,
+                        request.getPaymentDetails()
+                );
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid payment type: " + request.getPaymentType());
             }
-
-            bankAccountService.processPayment(bankAccount, request.getAmount(), strategy.get(PaymentOptions.BANK), Collections.emptyMap());
-        }
-    }
-
-    private void paymentWallet(List<UserRequest> userRequests) {
-        for (UserRequest request : userRequests) {
-            BankAccount bankAccount = bankAccountService.findAccountById(request.getAccountId());
-            if (bankAccount == null) {
-                System.out.println("no access " + request.getAccountId());
-                return;
-            }
-
-            bankAccountService.processPayment(bankAccount, request.getAmount(), strategy.get(PaymentOptions.WALLET), Collections.emptyMap());
         }
     }
 }
