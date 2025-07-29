@@ -1,29 +1,24 @@
-import BankAcount.src.BankAccount;
-import BankAcount.src.Transaction;
-import BankAcount.src.User;
-import org.example.AnalyticsService;
-import org.example.TransactionService;
-import org.example.TransactionType;
-import org.junit.Test;
+package week_two;
+
+import week_one.BankAccount;
+import week_one.Transaction;
+import week_one.User;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class TestAnalyticsService {
+public class AnalyticsServiceTest {
     private static final BigDecimal TEN_DOLLARS = new BigDecimal("10.00");
     private static final BigDecimal FIFTEEN_DOLLARS = new BigDecimal("15.00");
     private static final BigDecimal TWENTY_DOLLARS = new BigDecimal("20.00");
 
     private static final String BEAUTY_CATEGORY = "Beauty";
-    private static final String FOOD_CATEGORY = "Food";
+    private static final String HEALTH_CATEGORY = "Health";
     private static final String EDUCATION_CATEGORY = "Education";
 
     private static final LocalDateTime TEN_DAYS_AGO = LocalDateTime.now().minusDays(10);
@@ -31,24 +26,25 @@ public class TestAnalyticsService {
     private static final LocalDateTime THREE_DAYS_AGO = LocalDateTime.now().minusDays(3);
     private static final LocalDateTime ONE_DAY_AGO = LocalDateTime.now().minusDays(1);
 
-    private TransactionService transactionService = new TransactionService();
-    private AnalyticsService analyticsService = new AnalyticsService(transactionService);
-    private User user = new User("1", "Mark");
+    private final TransactionService transactionService = new TransactionService();
+    private final AnalyticsService analyticsService = new AnalyticsService(transactionService);
+    private final User user = new User("1", "Mark");
     private BankAccount bankAccount1;
     private BankAccount bankAccount2;
 
     @BeforeEach
+
     public void setUp() {
         bankAccount1 = new BankAccount("1", user);
         bankAccount2 = new BankAccount("2", user);
 
         bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
         bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
+        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, HEALTH_CATEGORY, THREE_DAYS_AGO));
         bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
 
-        user.getAccounts().add(bankAccount1);
-        user.getAccounts().add(bankAccount2);
+        user.addAccount(bankAccount1);
+        user.addAccount(bankAccount2);
     }
 
     @Test
@@ -78,13 +74,13 @@ public class TestAnalyticsService {
     public void get_transaction_history_sorted_by_amount() {
         LinkedHashMap<String, List<Transaction>> result = analyticsService.getTransactionHistorySortedByAmount(user);
         assertNotNull(result);
-        assertEquals(1, result.get(FOOD_CATEGORY).size());
+        assertEquals(1, result.get(HEALTH_CATEGORY).size());
         assertEquals(2, result.get(BEAUTY_CATEGORY).size());
         assertEquals(1, result.get(EDUCATION_CATEGORY).size());
 
-        assertEquals(TWENTY_DOLLARS, result.get(FOOD_CATEGORY).get(0).getValue());
-        assertEquals(TWENTY_DOLLARS, result.get(EDUCATION_CATEGORY).get(0).getValue());
-        assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY).get(0).getValue());
+        assertEquals(TWENTY_DOLLARS, result.get(HEALTH_CATEGORY).get(0).getAmount());
+        assertEquals(TWENTY_DOLLARS, result.get(EDUCATION_CATEGORY).get(0).getAmount());
+        assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY).get(0).getAmount());
     }
 
     @Test
@@ -131,9 +127,9 @@ public class TestAnalyticsService {
         Transaction second = result.poll();
 
         assertNotNull(first);
-        assertEquals(TWENTY_DOLLARS, first.getValue());
+        assertEquals(TWENTY_DOLLARS, first.getAmount());
         assertNotNull(second);
-        assertEquals(TWENTY_DOLLARS, second.getValue());
+        assertEquals(TWENTY_DOLLARS, second.getAmount());
     }
 
     @Test
@@ -149,5 +145,20 @@ public class TestAnalyticsService {
         user.getAccounts().add(bankAccount1);
         result = analyticsService.getTopNLargestTransactions(user, 2);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getMonthlySpendingByCategories() {
+        // Пользователь с транзакциями за последний месяц
+        Map<String, BigDecimal> result = analyticsService.getMonthlySpendingByCategories(
+                user, Set.of(HEALTH_CATEGORY, BEAUTY_CATEGORY, EDUCATION_CATEGORY));
+
+        // Проверка, что есть категория "Beauty", и сумма правильная
+        assertTrue(result.containsKey(BEAUTY_CATEGORY));
+        assertEquals(TEN_DOLLARS, result.get(BEAUTY_CATEGORY));
+
+        // Проверка, что есть категория "Food", и сумма тоже правильная
+        assertTrue(result.containsKey(HEALTH_CATEGORY));
+        assertEquals(TWENTY_DOLLARS, result.get(HEALTH_CATEGORY));
     }
 }

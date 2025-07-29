@@ -1,4 +1,4 @@
-package BankAcount.src;
+package week_one;
 
 import lombok.Getter;
 
@@ -23,8 +23,8 @@ public class User {
         accounts.add(account); // add прибавляет accounT в accountS
     }
 
-    public void getAccounts(BankAccount account) {
-        accounts.add(account);
+    public List<BankAccount> getAccounts() {
+        return accounts;
     }
 
 }

@@ -1,11 +1,15 @@
-package BankAcount.src;
+package week_one;
 
-import org.example.TransactionType;
+import week_two.TransactionType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class BankService {
+    private static final Logger log = LoggerFactory.getLogger(BankService.class);
     public BankAccount createAccount(User user, String accountNumber) {
         BankAccount account = new BankAccount(accountNumber, user);
         user.addAccount(account);
@@ -13,15 +17,16 @@ public class BankService {
     }
 
     public void transfer(BankAccount source, BankAccount target, BigDecimal amount) {
-        if (source.getBalance().compareTo(amount) >= 0) { // source( отправитель) вызывает метод гет баланс и после сравнивает его с суммой что хотят перевести
-            source.withdraw(amount); // отправитель отправляет
-            target.deposit(amount); // получатель получает
-            Transaction transaction = new Transaction(amount, TransactionType.TRANSFER, source, target); // мы создаем новую транзакцию
-            source.addTransaction(transaction); // добавляем транзакцию отправителю
-            target.addTransaction(transaction); // добавляем транзакцию получателю
-        } else {
-            System.out.println("Грошей на такие мувы не хватает ");
+        if (source.getBalance().compareTo(amount) < 0) {
+            log.info("Грошей на такие мувы не хватает");
+            return;
         }
+
+        source.withdraw(amount); // отправитель отправляет
+        target.deposit(amount); // получатель получает
+        Transaction transaction = new Transaction(amount, TransactionType.TRANSFER, source, target); // мы создаем новую транзакцию
+        source.addTransaction(transaction); // добавляем транзакцию отправителю
+        target.addTransaction(transaction); // добавляем транзакцию получателю
     }
 
     public List<Transaction> getTransactionHistory(BankAccount account) {

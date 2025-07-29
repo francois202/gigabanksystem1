@@ -1,10 +1,9 @@
-package BankAcount.src;
+package week_one;
 
-import lombok.*;
-import org.example.TransactionType;
+import lombok.Data;
+import week_two.TransactionType;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ public class Transaction {
     private LocalDateTime date;
     private BankAccount sourceAccount;
     private BankAccount targetAccount;
-    private LocalDateTime createdDate;
     private BigDecimal value;
     private String category;
 
@@ -32,17 +30,18 @@ public class Transaction {
 
     }
 
-    public Transaction(String id, BigDecimal amount, TransactionType type, String category, LocalDateTime createdDate) {
+    public Transaction(String id, BigDecimal amount, TransactionType type, String category, LocalDateTime date) {
         this.id = id;
         this.amount = amount;
         this.type = type;
         this.category = category;
         this.date = date;
+
     }
 
 
     public String toString() { // здесь с помощью toString я решаю что будет выводиться при вызове getTransaction
-        return type + " вот стока " + amount + "вот во стока " + LocalDateTime.now();
+        return type + " вот стока " + amount + "вот во стока " + date;
     }
 
 

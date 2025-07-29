@@ -1,8 +1,8 @@
-package BankAcount.src;
+package week_one;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.example.TransactionType;
+import week_two.TransactionType;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -12,9 +12,9 @@ import java.util.List;
 @Getter
 public class BankAccount {
 
-    private String accountNumber;
-    private BigDecimal balance;
-    private User owner;
+    private final String accountNumber;
+    private  BigDecimal balance;
+    private final User owner;
     private List<Transaction> transactions;
 
     public BankAccount(String accountNumber, User owner) { // конструктор
@@ -23,7 +23,6 @@ public class BankAccount {
         this.owner = owner;
         this.transactions = new ArrayList<>(); // создаю пустой список в котором будут храниться транзакции
     }
-
 
     public void deposit(BigDecimal amount) {
         balance = balance.add(amount); // создал метод депозит который пополняет баланс add(amount)
@@ -42,7 +41,5 @@ public class BankAccount {
     public void addTransaction(Transaction transaction) { // используем войд потому что нам надо просто изменить состояние внутри объекта
         transactions.add(transaction); // transactionS это список всех транзакций transactioN это именно эта транзакция (название берется из параметров метода я могу назвать ее по любому)
     }
-
-
 }
 

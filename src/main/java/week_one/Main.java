@@ -1,9 +1,14 @@
-package BankAcount.src;
+package week_one;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
         // Создаем пользователя
         User user = new User("user1", "John Doe");
@@ -26,12 +31,12 @@ public class Main {
         // Переводим средства между счетами
         bankService.transfer(acc1, acc2, new BigDecimal("500"));
 
-        // Выводим балансы
-        System.out.println("Balance of ACC123: " + acc1.getBalance());
-        System.out.println("Balance of ACC456: " + acc2.getBalance());
+        // Логируем балансы
+        log.info("Balance of {}: {}", acc1.getAccountNumber(), acc1.getBalance());
+        log.info("Balance of {}: {}", acc2.getAccountNumber(), acc2.getBalance());
 
-        // Выводим историю транзакций
-        System.out.println("Transaction history for ACC123:");
-        bankService.getTransactionHistory(acc1).forEach(System.out::println);
+        // Логируем историю транзакций
+        log.info("Transaction history for {}:", acc1.getAccountNumber());
+        bankService.getTransactionHistory(acc1).forEach(tx -> log.info("{}", tx));
     }
 }
