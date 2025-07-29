@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement.persistence;
 
 import gigabank.accountmanagement.dto.TransactionDTO;
 import org.slf4j.Logger;

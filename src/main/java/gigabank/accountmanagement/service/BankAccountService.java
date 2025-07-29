@@ -5,6 +5,7 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.persistence.DBManager;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import gigabank.accountmanagement.service.paymentstrategy.PaymentStrategy;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
@@ -45,17 +47,18 @@ public class BankAccountService {
         try {
             Integer userId = request.userId();
             User user = new User();
+            String accountId = UUID.randomUUID().toString();
             user.setId(String.valueOf(userId));
             String accountNumber = "ACC_" + System.currentTimeMillis();
             BankAccount account = new BankAccount(accountNumber, new ArrayList<>());
             account.setOwner(user);
             account.setBalance(request.initialBalance());
-            dbManager.addBankAccount(user.getId(), request.initialBalance());
+            dbManager.addBankAccount(accountId, user.getId(), request.initialBalance());
             userBankAccounts.computeIfAbsent(account.getOwner(), k -> new ArrayList<>()).add(account);
             return account;
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Неверный формат userId");
-        } catch (SQLException e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
     }

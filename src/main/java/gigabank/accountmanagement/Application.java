@@ -1,9 +1,9 @@
 package gigabank.accountmanagement;
 
-import gigabank.accountmanagement.service.BankAccountServiceBDImpl;
-import gigabank.accountmanagement.service.CreateTables;
-import gigabank.accountmanagement.service.DBConnectionManager;
-import gigabank.accountmanagement.service.PhantomRead;
+import gigabank.accountmanagement.persistence.BankAccountServiceBDImpl;
+import gigabank.accountmanagement.persistence.CreateTables;
+import gigabank.accountmanagement.persistence.DBConnectionManager;
+import gigabank.accountmanagement.persistence.PhantomRead;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;

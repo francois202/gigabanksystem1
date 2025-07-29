@@ -4,6 +4,7 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.persistence.DBManager;
 import gigabank.accountmanagement.service.notification.NotificationAdapter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement.persistence;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

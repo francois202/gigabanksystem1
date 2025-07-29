@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement.persistence;
 
 import gigabank.accountmanagement.dto.BankAccountDTO;
 import gigabank.accountmanagement.dto.TransactionDTO;
@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -41,20 +42,21 @@ public class DBManager {
         this.dbManager = dbManager;
     }
 
-    public void addUser(String username, String email, String phone) throws SQLException {
+    public void addUser(String username, String email, String phone) {
         String userId = UUID.randomUUID().toString();
+        List<UserDTO> existingUsers = getUsers();
+        if (existingUsers.stream().anyMatch(account -> account.getUserId().equals(userId))) {
+            throw new RuntimeException("Пользователь с ID " + userId + " уже существует");
+        }
         try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_USER_SQL)) {
             stmt.setString(1, userId);
             stmt.setString(2, username);
             stmt.setString(3, email);
             stmt.setString(4, phone);
             stmt.executeUpdate();
-            logger.info("Пользователь добавлен: {}, user_id: {} в {}", username, userId, new java.util.Date());
+            logger.info("Пользователь добавлен: {}, user_id: {} в {}", username, userId, LocalDateTime.now());
         } catch (SQLException e) {
-            if (e.getSQLState().equals("23505")) {
-                throw new SQLException("Пользователь " + userId + " уже существует", e);
-            }
-            logger.error("Ошибка добавления пользователя: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка добавления пользователя: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка добавления пользователя", e);
         }
     }
@@ -72,16 +74,19 @@ public class DBManager {
                 );
                 users.add(user);
             }
-            logger.info("Получено {} пользователей в {}", users.size(), new java.util.Date());
+            logger.info("Получено {} пользователей в {}", users.size(), LocalDateTime.now());
             return users;
         } catch (SQLException e) {
-            logger.error("Ошибка получения пользователей: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка получения пользователей: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка получения пользователей", e);
         }
     }
 
-    public void addBankAccount(String userId, BigDecimal initialBalance) throws SQLException {
-        String accountId = UUID.randomUUID().toString();
+    public void addBankAccount(String accountId, String userId, BigDecimal initialBalance) {
+        List<BankAccountDTO> existingAccounts = getAccountsByUser(userId);
+        if (existingAccounts.stream().anyMatch(account -> account.getId().equals(accountId))) {
+            throw new RuntimeException("Банковский счёт с ID " + accountId + " уже существует");
+        }
         String accountNumber = "ACC_" + UUID.randomUUID().toString();
         try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_BANK_ACCOUNT_SQL)) {
             stmt.setString(1, accountId);
@@ -89,27 +94,24 @@ public class DBManager {
             stmt.setString(3, userId);
             stmt.setBigDecimal(4, initialBalance);
             stmt.executeUpdate();
-            logger.info("Счёт добавлен: {}, баланс: {} в {}",accountId, initialBalance, new java.util.Date());
+            logger.info("Счёт добавлен: {}, баланс: {} в {}",accountId, initialBalance, LocalDateTime.now());
         } catch (SQLException e) {
-            if (e.getSQLState().equals("23505")) {
-                throw new SQLException("Банковский счёт с ID " + userId + " уже существует", e);
-            }
-            logger.error("Ошибка добавления счёта: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка добавления счёта: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка добавления счёта", e);
         }
     }
 
-    public void deleteUser(String userId) throws SQLException {
-        List<Object[]> queries = List.of(
-                new Object[]{DELETE_BANK_ACCOUNTS_SQL, userId},
-                new Object[]{DELETE_USER_SQL, userId}
+    public void deleteUser(String userId) {
+        List<SqlQuery> queries = List.of(
+                new SqlQuery(DELETE_BANK_ACCOUNTS_SQL, userId),
+                new SqlQuery(DELETE_USER_SQL, userId)
         );
         try {
             dbManager.executeUpdateInTransaction(queries);
-            logger.info("Пользователь и его счёта удалены: {} в {}", userId, new java.util.Date());
-        } catch (SQLException e) {
-            logger.error("Ошибка удаления пользователя: {} в {}", e.getMessage(), new java.util.Date());
-            throw e;
+            logger.info("Пользователь и его счёта удалены: {} в {}", userId, LocalDateTime.now());
+        } catch (RuntimeException e) {
+            logger.error("Ошибка удаления пользователя: {} в {}", e.getMessage(), LocalDateTime.now());
+            throw new RuntimeException("Ошибка удаления пользователя", e);
         }
     }
 
@@ -119,17 +121,22 @@ public class DBManager {
             stmt.setString(2, accountId);
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
-                logger.info("Баланс обновлён для счёта: {}, новый баланс: {} в {}", accountId, newBalance, new java.util.Date());
+                logger.info("Баланс обновлён для счёта: {}, новый баланс: {} в {}", accountId, newBalance, LocalDateTime.now());
             } else {
-                logger.warn("Счёт не найден: {} в {}", accountId, new java.util.Date());
+                logger.warn("Счёт не найден: {} в {}", accountId, LocalDateTime.now());
             }
         } catch (SQLException e) {
-            logger.error("Ошибка обновления баланса: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка обновления баланса: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка обновления баланса", e);
         }
     }
 
-    public void addTransaction(String transactionId, String userId, BigDecimal amount, String type, Timestamp date, String source, String target) throws SQLException {
+    public void addTransaction(String transactionId, String userId, BigDecimal amount, String type, Timestamp date, String source, String target) {
+        TransactionDTO existingTransaction = getTransaction(transactionId);
+        if (existingTransaction != null) {
+            logger.error("Транзакция с ID {} уже существует", transactionId);
+            throw new RuntimeException("Транзакция с ID " + transactionId + " уже существует");
+        }
         try (PreparedStatement stmt = dbManager.obtainConnection().prepareStatement(INSERT_TRANSACTION_SQL)) {
             stmt.setString(1, transactionId);
             stmt.setString(2, userId);
@@ -139,13 +146,9 @@ public class DBManager {
             stmt.setString(6, source);
             stmt.setString(7, target);
             stmt.executeUpdate();
-            logger.info("Транзакция добавлена: {}, сумма: {} в {}",transactionId, amount, new java.util.Date());
+            logger.info("Транзакция добавлена: {}, сумма: {} в {}",transactionId, amount, LocalDateTime.now());
         } catch (SQLException e) {
-            if (e.getSQLState().equals("23505")) {
-                logger.error("Транзакция с ID {} уже существует: {}", transactionId, e.getMessage());
-                throw new SQLException("Транзакция с ID " + transactionId + " уже существует", e);
-            }
-            logger.error("Ошибка добавления транзакции: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка добавления транзакции: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка добавления транзакции", e);
         }
     }
@@ -166,10 +169,10 @@ public class DBManager {
                 );
                 transactions.add(transaction);
             }
-            logger.info("Получено {} транзакций в {}", transactions.size(), new java.util.Date());
+            logger.info("Получено {} транзакций в {}", transactions.size(), LocalDateTime.now());
             return transactions;
         } catch (SQLException e) {
-            logger.error("Ошибка получения транзакций: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка получения транзакций: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка получения транзакций", e);
         }
     }
@@ -188,15 +191,15 @@ public class DBManager {
                             rs.getString("source"),
                             rs.getString("target")
                     );
-                    logger.info("Транзакция найдена: {} в {}", transactionId, new java.util.Date());
+                    logger.info("Транзакция найдена: {} в {}", transactionId, LocalDateTime.now());
                     return transaction;
                 } else {
-                    logger.warn("Транзакция не найдена: {} в {}", transactionId, new java.util.Date());
+                    logger.warn("Транзакция не найдена: {} в {}", transactionId, LocalDateTime.now());
                     return null;
                 }
             }
         } catch (SQLException e) {
-            logger.error("Ошибка получения транзакции: {} в {}", e.getMessage(), new java.util.Date());
+            logger.error("Ошибка получения транзакции: {} в {}", e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка получения транзакции", e);
         }
     }
@@ -216,10 +219,10 @@ public class DBManager {
                     accounts.add(account);
                 }
             }
-            logger.info("Получено {} счетов для пользователя: {} в {}", accounts.size(), userId, new java.util.Date());
+            logger.info("Получено {} счетов для пользователя: {} в {}", accounts.size(), userId, LocalDateTime.now());
             return accounts;
         } catch (SQLException e) {
-            logger.error("Ошибка получения счетов: {} в {}",e.getMessage(), new java.util.Date());
+            logger.error("Ошибка получения счетов: {} в {}",e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка получения счетов", e);
         }
     }
@@ -243,10 +246,10 @@ public class DBManager {
                     transactions.add(transaction);
                 }
             }
-            logger.info("Получено {} транзакций за период с {} по {} в {}", transactions.size(), startDate, endDate, new java.util.Date());
+            logger.info("Получено {} транзакций за период с {} по {} в {}", transactions.size(), startDate, endDate, LocalDateTime.now());
             return transactions;
         } catch (SQLException e) {
-            logger.error("Ошибка получения транзакций по дате: {} в {}",e.getMessage(), new java.util.Date());
+            logger.error("Ошибка получения транзакций по дате: {} в {}",e.getMessage(), LocalDateTime.now());
             throw new RuntimeException("Ошибка получения транзакций по дате", e);
         }
     }
