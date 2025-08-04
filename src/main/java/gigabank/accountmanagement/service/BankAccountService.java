@@ -4,7 +4,9 @@ import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
+import gigabank.accountmanagement.service.notification.NotificationService;
+import gigabank.accountmanagement.service.payment.PaymentGatewayService;
+import gigabank.accountmanagement.service.payment.strategies.PaymentStrategy;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,11 +18,11 @@ import java.util.Map;
  */
 public class BankAccountService {
     private final PaymentGatewayService paymentGatewayService;
-    private final ExternalNotificationService externalNotificationService;
+    private final NotificationService notificationService;
 
-    public BankAccountService(PaymentGatewayService paymentGatewayService, ExternalNotificationService externalNotificationService) {
-        this.paymentGatewayService = paymentGatewayService;
-        this.externalNotificationService = externalNotificationService;
+    public BankAccountService(NotificationService notificationService) {
+        this.paymentGatewayService = PaymentGatewayService.getPaymentGatewayService();
+        this.notificationService = notificationService;
     }
 
     public BankAccount findAccountById(int accountId) {
@@ -31,31 +33,9 @@ public class BankAccountService {
         account.setBalance(account.getBalance().subtract(amount));
     }
 
-    public void processCardPayment(BankAccount account, BigDecimal amount, String cardNumber, String merchantName) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed card payment for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
-    }
-
-    public void processBankTransfer(BankAccount account, BigDecimal amount, String bankName) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed bank transfer for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
-    }
-
-    public void processWalletPayment(BankAccount account, BigDecimal amount, String walletId) {
-        withdraw(account, amount);
-        //создание транзакции
-        System.out.println("Processed wallet payment for account " + account.getId());
-        paymentGatewayService.authorize("Платеж по карте", amount);
-        externalNotificationService.sendSms(account.getOwner().getPhoneNumber(), "Произошел платеж по карте");
-        externalNotificationService.sendEmail(account.getOwner().getEmail(), "Информация о платеже", "Произошел платеж по карте");
+    public void processPayment(BankAccount account, BigDecimal amount,
+                               PaymentStrategy strategy, Map<String, String> details) {
+        strategy.process(account, amount, details);
     }
 
     public static BankAccount createTestAccount() {
@@ -73,21 +53,21 @@ public class BankAccountService {
         account.setBalance(new BigDecimal("5000.00"));
         account.setOwner(testUser);
 
-        Transaction transaction1 = new Transaction(
-                "tx001",
-                new BigDecimal("100.00"),
-                TransactionType.PAYMENT,
-                "Electronics",
-                LocalDateTime.now().minusDays(5)
-        );
+        Transaction transaction1 = Transaction.builder()
+                .id("tx001")
+                .value(new BigDecimal("100.00"))
+                .type(TransactionType.PAYMENT)
+                .category("Electronics")
+                .createdDate(LocalDateTime.now().minusDays(5))
+                .build();
 
-        Transaction transaction2 = new Transaction(
-                "tx002",
-                new BigDecimal("200.00"),
-                TransactionType.DEPOSIT,
-                "Groceries",
-                LocalDateTime.now().minusDays(2)
-        );
+        Transaction transaction2 = Transaction.builder()
+                .id("tx002")
+                .value(new BigDecimal("200.00"))
+                .type(TransactionType.DEPOSIT)
+                .category("Groceries")
+                .createdDate(LocalDateTime.now().minusDays(2))
+                .build();
 
         account.getTransactions().addAll(List.of(transaction1, transaction2));
 

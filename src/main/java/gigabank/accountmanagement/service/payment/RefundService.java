@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement.service.payment;
 
 import gigabank.accountmanagement.entity.Refund;
 
@@ -8,8 +8,8 @@ import gigabank.accountmanagement.entity.Refund;
 public class RefundService {
     private final PaymentGatewayService paymentGatewayService;
 
-    public RefundService(PaymentGatewayService paymentGatewayService) {
-        this.paymentGatewayService = paymentGatewayService;
+    public RefundService() {
+        this.paymentGatewayService = PaymentGatewayService.getPaymentGatewayService();
     }
 
     public void createRefund(Refund refund) {

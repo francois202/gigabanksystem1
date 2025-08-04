@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.annotations.LogExecutionTime;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
@@ -25,6 +26,7 @@ public class AnalyticsService {
      * @param bankAccount - счет
      * @param category    - категория
      */
+    @LogExecutionTime
     public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
         BigDecimal totalSum = BigDecimal.ZERO;
 
@@ -122,6 +124,7 @@ public class AnalyticsService {
      * @param n    - количество топовых транзакций
      * @return PriorityQueue, где транзакции хранятся в порядке убывания их значения
      */
+    @LogExecutionTime
     public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
         PriorityQueue<Transaction> transactionPriorityQueue =
                 new PriorityQueue<>(Comparator.comparing(Transaction::getValue));

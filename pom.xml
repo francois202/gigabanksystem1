@@ -51,7 +51,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Explicitly specify the version of the maven-resources-plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>

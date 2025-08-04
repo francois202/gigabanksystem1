@@ -1,18 +1,21 @@
+import gigabank.accountmanagement.annotations.LogExecutionTime;
+import gigabank.accountmanagement.dto.UserRequest;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.AnalyticsService;
+import gigabank.accountmanagement.service.BankManager;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,8 +56,35 @@ public class AnalyticsServiceTest {
 
     @Test
     public void get_monthly_spending_by_category() {
-        BigDecimal result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
-        assertEquals(TEN_DOLLARS, result);
+        try {
+            Method method = AnalyticsService.class.getMethod(
+                    "getMonthlySpendingByCategory",
+                    BankAccount.class,
+                    String.class
+            );
+
+            if (method.isAnnotationPresent(LogExecutionTime.class)) {
+                long startTime = System.currentTimeMillis();
+                System.out.println(method.getName() + " started");
+
+                BigDecimal result = (BigDecimal) method.invoke(
+                        analyticsService,
+                        bankAccount1,
+                        BEAUTY_CATEGORY
+                );
+
+                long endTime = System.currentTimeMillis();
+                System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
+
+                assertEquals(TEN_DOLLARS, result);
+            }
+        } catch (NoSuchMethodException e) {
+            fail("Метод не найден: " + e.getMessage());
+        } catch (IllegalAccessException e) {
+            fail("Нет доступа к методу: " + e.getMessage());
+        } catch (InvocationTargetException e) {
+            fail("Ошибка при вызове метода: " + e.getMessage());
+        }
     }
 
     @Test
@@ -124,14 +154,34 @@ public class AnalyticsServiceTest {
 
     @Test
     public void get_top_n_largest_transactions() {
-        PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(user, 2);
-        assertEquals(2, result.size());
 
-        Transaction first = result.poll();
-        Transaction second = result.poll();
+        try {
+            Method method = AnalyticsService.class.getMethod(
+                    "getTopNLargestTransactions",
+                    User.class,
+                    int.class
+            );
 
-        assertEquals(TWENTY_DOLLARS, first.getValue());
-        assertEquals(TWENTY_DOLLARS, second.getValue());
+            if (method.isAnnotationPresent(LogExecutionTime.class)) {
+                long startTime = System.currentTimeMillis();
+                System.out.println(method.getName() + " started");
+
+                PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(user, 2);
+
+                long endTime = System.currentTimeMillis();
+                System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
+
+                assertEquals(2, result.size());
+
+                Transaction first = result.poll();
+                Transaction second = result.poll();
+
+                assertEquals(TWENTY_DOLLARS, first.getValue());
+                assertEquals(TWENTY_DOLLARS, second.getValue());
+            }
+        } catch (NoSuchMethodException e) {
+            fail("Метод не найден: " + e.getMessage());
+        }
     }
 
     @Test
@@ -173,5 +223,28 @@ public class AnalyticsServiceTest {
                 .count();
         endTime = System.currentTimeMillis();
         System.out.println("Parallel stream time: " + (endTime - startTime) + " ms");
+    }
+
+    @Disabled
+    @Test()
+    public void process_requests_bank_manager() {
+        List<UserRequest> requests = new ArrayList<>();
+
+        requests.add(new UserRequest(
+                14,
+                new BigDecimal("1000.00"),
+                "DEPOSIT",
+                Map.of("method", "CASH", "branch", "NY-123")
+        ));
+
+        requests.add(new UserRequest(
+                12345,
+                new BigDecimal("500.50"),
+                "WITHDRAWAL",
+                Map.of("method", "ATM", "atmId", "ATM-5678")
+        ));
+
+        //BankManager bankManager = new BankManager();
+        //bankManager.processRequests(requests);
     }
 }

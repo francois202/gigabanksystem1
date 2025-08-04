@@ -1,13 +1,22 @@
-package gigabank.accountmanagement.service;
+package gigabank.accountmanagement.service.payment;
 
 import java.math.BigDecimal;
 
 // Внешняя платежная система
 public class PaymentGatewayService {
-    public PaymentGatewayService() {
-        System.out.println("Создано новое подключение к платёжной системе...");
+
+    private static PaymentGatewayService paymentGatewayService;
+
+    public static PaymentGatewayService getPaymentGatewayService() {
+        if (paymentGatewayService == null) {
+            paymentGatewayService = new PaymentGatewayService();
+        }
+        return paymentGatewayService;
     }
 
+    private PaymentGatewayService() {
+        System.out.println("Создано новое подключение к платёжной системе...");
+    }
 
     public boolean authorize(String txId, BigDecimal amount) {
         //здесь эмуляция вызова внешней платежной системы

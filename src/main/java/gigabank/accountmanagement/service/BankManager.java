@@ -2,40 +2,32 @@ package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.dto.UserRequest;
 import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.service.notification.ExternalNotificationService;
+import gigabank.accountmanagement.enums.PaymentType;
+import gigabank.accountmanagement.service.payment.PaymentHandler;
 
 import java.util.List;
+import java.util.UUID;
 
 public class BankManager {
-    private BankAccountService serv = new BankAccountService(null, null); // неправильная инициализация
-    private PaymentGatewayService payService = new PaymentGatewayService();
-    private ExternalNotificationService notifier = new ExternalNotificationService();
+    private final BankAccountService bankAccountService;
+    private final PaymentHandler paymentHandler;
 
-    public void doWork(List<UserRequest> rqs) {
-        for (UserRequest r : rqs) {
-            BankAccount a = serv.findAccountById(r.getAccountId());
-            if (a == null) {
-                System.out.println("no acc " + r.getAccountId());
+    public BankManager(BankAccountService bankAccountService, PaymentHandler paymentHandler) {
+        this.bankAccountService = bankAccountService;
+        this.paymentHandler = paymentHandler;
+    }
+
+    public void processRequests(List<UserRequest> requests) {
+        for (UserRequest request : requests) {
+            String authorizationId = UUID.randomUUID().toString();
+            PaymentType paymentType = PaymentType.valueOf(request.getPaymentType());
+
+            BankAccount account = bankAccountService.findAccountById(request.getAccountId());
+            if (account == null) {
+                System.out.println("No account with ID: " + request.getAccountId());
                 continue;
             }
-            if (r.getPaymentType().equals("CARD")) {
-                payService.authorize("tx", r.getAmount());
-                serv.withdraw(a, r.getAmount());
-                System.out.println("card pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "paid " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "payment", "card pay " + r.getAmount());
-            } else if (r.getPaymentType().equals("BANK")) {
-                payService.authorize("tx", r.getAmount());
-                System.out.println("bank pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "payment bank " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "payment bank", "payment bank " + r.getAmount());
-            } else if (r.getPaymentType().equals("WALLET")) {
-                payService.authorize("tx", r.getAmount());
-                serv.withdraw(a, r.getAmount());
-                System.out.println("wallet pay " + a.getId());
-                notifier.sendSms(a.getOwner().getPhoneNumber(), "wallet " + r.getAmount());
-                notifier.sendEmail(a.getOwner().getEmail(), "wallet", "wallet " + r.getAmount());
-            }
+            paymentHandler.processPayment(account, request.getAmount(), authorizationId, paymentType);
         }
     }
 }
