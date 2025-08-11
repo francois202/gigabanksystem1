@@ -22,6 +22,7 @@ public class TransactionService {
     public static final Set<String> TRANSACTION_CATEGORIES = Set.of(
             "Health", "Beauty", "Education");
 
+
     public Boolean isValidCategory(String category) {
         return category != null && TRANSACTION_CATEGORIES.contains(category);
     }
@@ -98,6 +99,4 @@ public class TransactionService {
     public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier) {
         return supplier.get();
     }
-
-
 }
