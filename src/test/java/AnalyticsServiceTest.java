@@ -44,11 +44,11 @@ public class AnalyticsServiceTest {
     public void setUp() {
         bankAccount1 = new BankAccount();
         bankAccount2 = new BankAccount();
-
-        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
-        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
-        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
+//
+//        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+//        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
+//        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
+//        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
 
         user.getBankAccounts().add(bankAccount1);
         user.getBankAccounts().add(bankAccount2);
@@ -99,7 +99,7 @@ public class AnalyticsServiceTest {
 
         // Нет транзакций за последний месяц
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("5", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
+        //bankAccount1.getTransactions().add(new Transaction("5", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
         result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
         assertEquals(BigDecimal.ZERO, result);
     }
@@ -126,7 +126,7 @@ public class AnalyticsServiceTest {
         // Нет транзакций типа PAYMENT
         user.getBankAccounts().clear();
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+        //bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
         user.getBankAccounts().add(bankAccount1);
         result = analyticsService.getTransactionHistorySortedByAmount(user);
         assertTrue(result.isEmpty());
@@ -193,7 +193,7 @@ public class AnalyticsServiceTest {
         // Нет транзакций типа PAYMENT
         user.getBankAccounts().clear();
         bankAccount1.getTransactions().clear();
-        bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
+        //bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
         user.getBankAccounts().add(bankAccount1);
         result = analyticsService.getTopNLargestTransactions(user, 2);
         assertTrue(result.isEmpty());

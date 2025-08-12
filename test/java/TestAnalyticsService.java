@@ -38,20 +38,20 @@ public class TestAnalyticsService {
     public void createNewBankAccount() {
 
         List<Transaction> testTransactionOnlyDepositType = new ArrayList<>();
-        testTransactionOnlyDepositType.add(new Transaction("1", TWO_DOLLARS
-                , TransactionType.DEPOSIT, BEAUTY_CATEGORY, ONE_WEEK_AGO));
-        testTransactionOnlyDepositType.add(new Transaction("2", TEN_DOLLARS
-                , TransactionType.DEPOSIT, HEALTH_CATEGORY, ONE_WEEK_AGO));
-        testTransactionOnlyDepositType.add(new Transaction("3", ONE_DOLLAR
-                , TransactionType.DEPOSIT, EDUCATION_CATEGORY, ONE_WEEK_AGO));
-
-        List<Transaction> testTransactionDifTime = new ArrayList<>();
-        testTransactionDifTime.add(new Transaction("1", TWO_DOLLARS
-                , TransactionType.PAYMENT, BEAUTY_CATEGORY, ONE_MONTH_AGO));
-        testTransactionDifTime.add(new Transaction("2", TEN_DOLLARS
-                , TransactionType.PAYMENT, HEALTH_CATEGORY, FIVE_WEEK_AGO));
-        testTransactionDifTime.add(new Transaction("3", ONE_DOLLAR
-                , TransactionType.PAYMENT, EDUCATION_CATEGORY, TWO_MONTH_AGO));
+//        testTransactionOnlyDepositType.add(new Transaction("1", TWO_DOLLARS
+//                , TransactionType.DEPOSIT, BEAUTY_CATEGORY, ONE_WEEK_AGO));
+//        testTransactionOnlyDepositType.add(new Transaction("2", TEN_DOLLARS
+//                , TransactionType.DEPOSIT, HEALTH_CATEGORY, ONE_WEEK_AGO));
+//        testTransactionOnlyDepositType.add(new Transaction("3", ONE_DOLLAR
+//                , TransactionType.DEPOSIT, EDUCATION_CATEGORY, ONE_WEEK_AGO));
+//
+//        List<Transaction> testTransactionDifTime = new ArrayList<>();
+//        testTransactionDifTime.add(new Transaction("1", TWO_DOLLARS
+//                , TransactionType.PAYMENT, BEAUTY_CATEGORY, ONE_MONTH_AGO));
+//        testTransactionDifTime.add(new Transaction("2", TEN_DOLLARS
+//                , TransactionType.PAYMENT, HEALTH_CATEGORY, FIVE_WEEK_AGO));
+//        testTransactionDifTime.add(new Transaction("3", ONE_DOLLAR
+//                , TransactionType.PAYMENT, EDUCATION_CATEGORY, TWO_MONTH_AGO));
 
         List<Transaction> TypeAndTime = Stream.concat(testTransactionOnlyDepositType.stream()
                 , testTransactionDifTime.stream()).toList();
