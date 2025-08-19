@@ -5,16 +5,22 @@ import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Service
 public class CardPaymentStrategy implements PaymentStrategy {
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationService notificationService;
 
-    public CardPaymentStrategy(PaymentGatewayService paymentGatewayService, NotificationService notificationService) {
+    @Autowired
+    public CardPaymentStrategy(PaymentGatewayService paymentGatewayService,
+                               @Qualifier("emailNotificationService") NotificationService notificationService) {
         this.paymentGatewayService = paymentGatewayService;
         this.notificationService = notificationService;
     }

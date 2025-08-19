@@ -7,14 +7,17 @@ import gigabank.accountmanagement.entity.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Сервис предоставляет аналитику по операциям пользователей
  */
+@Service
 @RequiredArgsConstructor
 public class AnalyticsService {
     private final TransactionService transactionService;
@@ -142,59 +145,5 @@ public class AnalyticsService {
 
         return transactionPriorityQueue;
     }
-
-    /**
-     *  Вывод последних N транзакций пользователя
-     * @param user - пользователь
-     * @param n - кол-во последних транзакций
-     */
-    public List<Transaction> getLastNTransaction(User user, int n){
-        List<Transaction> allTransaction = new ArrayList<>();
-        List<Transaction> result = new ArrayList<>();
-
-        if (user == null)
-            return result;
-
-        for (BankAccount bankAccount : user.getBankAccounts()){
-            allTransaction.addAll(bankAccount.getTransactions());
-        }
-        allTransaction.sort(Comparator.comparing(Transaction::getCreatedDate));
-
-        for (int i = 0; i < Math.min(n, allTransaction.size()); i++) {
-            result.add(allTransaction.get(i));
-        }
-
-        return result;
-    }
-
-    /**
-     * Вывод топ-N самых больших платежных  транзакций пользователя
-     * @param user - пользователь
-     * @param n - кол-во последних транзакций
-     */
-    public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n){
-        PriorityQueue<Transaction> result = new PriorityQueue<>();
-
-        if (user == null)
-            return result;
-        List<Transaction> allTransaction = new ArrayList<>();
-        for (BankAccount bankAccount : user.getBankAccounts()){
-            for (Transaction transaction : bankAccount.getTransactions()){
-                if (TransactionType.PAYMENT.equals(transaction.getType())){
-                    if (result.size() < n)
-                        result.offer(transaction);
-                    else if (result.peek() != null
-                            && result.peek().getValue().compareTo(transaction.getValue()) < 0){
-                        result.poll();
-                        result.offer(transaction);
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
-
 }
 

@@ -1,20 +1,13 @@
 package gigabank.accountmanagement.service.payment;
 
+import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 
 // Внешняя платежная система
+@Service
 public class PaymentGatewayService {
-
-    private static PaymentGatewayService paymentGatewayService;
-
-    public static PaymentGatewayService getPaymentGatewayService() {
-        if (paymentGatewayService == null) {
-            paymentGatewayService = new PaymentGatewayService();
-        }
-        return paymentGatewayService;
-    }
-
-    private PaymentGatewayService() {
+    public PaymentGatewayService() {
         System.out.println("Создано новое подключение к платёжной системе...");
     }
 

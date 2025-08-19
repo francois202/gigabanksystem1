@@ -2,6 +2,7 @@ package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.entity.Transaction;
 import gigabank.accountmanagement.entity.User;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,8 +17,8 @@ import java.util.stream.Collectors;
 /**
  * Сервис отвечает за управление платежами и переводами
  */
+@Service
 public class TransactionService {
-
     //реализация данного Set - неизменяемый стрим, не допускающий передачу null значений
     public static final Set<String> TRANSACTION_CATEGORIES = Set.of(
             "Health", "Beauty", "Education");

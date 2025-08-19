@@ -4,14 +4,18 @@ import gigabank.accountmanagement.dto.UserRequest;
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.enums.PaymentType;
 import gigabank.accountmanagement.service.payment.PaymentHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class BankManager {
     private final BankAccountService bankAccountService;
     private final PaymentHandler paymentHandler;
 
+    @Autowired
     public BankManager(BankAccountService bankAccountService, PaymentHandler paymentHandler) {
         this.bankAccountService = bankAccountService;
         this.paymentHandler = paymentHandler;
