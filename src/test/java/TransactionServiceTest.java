@@ -1,6 +1,6 @@
 import gigabank.accountmanagement.entity.BankAccount;
 import gigabank.accountmanagement.entity.Transaction;
-import gigabank.accountmanagement.entity.TransactionType;
+import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.entity.User;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;

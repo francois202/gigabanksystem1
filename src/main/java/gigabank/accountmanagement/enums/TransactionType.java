@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.entity;
+package gigabank.accountmanagement.enums;
 
 import lombok.Getter;
 

@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.entity;
 
+import gigabank.accountmanagement.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
