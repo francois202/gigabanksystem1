@@ -1,9 +1,9 @@
 import gigabank.accountmanagement.annotations.LogExecutionTime;
 import gigabank.accountmanagement.dto.UserRequest;
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.UserEntity;
 import gigabank.accountmanagement.service.AnalyticsService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,22 +35,22 @@ public class AnalyticsServiceTest {
 
     private TransactionService transactionService = new TransactionService();
     private AnalyticsService analyticsService = new AnalyticsService(transactionService);
-    private User user = new User();
-    private BankAccount bankAccount1;
-    private BankAccount bankAccount2;
+    private UserEntity userEntity = new UserEntity();
+    private BankAccountEntity bankAccountEntity1;
+    private BankAccountEntity bankAccountEntity2;
 
     @BeforeEach
     public void setUp() {
-        bankAccount1 = new BankAccount();
-        bankAccount2 = new BankAccount();
+        bankAccountEntity1 = new BankAccountEntity();
+        bankAccountEntity2 = new BankAccountEntity();
 //
 //        bankAccount1.getTransactions().add(new Transaction("1", TEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
 //        bankAccount1.getTransactions().add(new Transaction("2", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
 //        bankAccount2.getTransactions().add(new Transaction("3", TWENTY_DOLLARS, TransactionType.PAYMENT, FOOD_CATEGORY, THREE_DAYS_AGO));
 //        bankAccount2.getTransactions().add(new Transaction("4", TWENTY_DOLLARS, TransactionType.PAYMENT, EDUCATION_CATEGORY, ONE_DAY_AGO));
 
-        user.getBankAccounts().add(bankAccount1);
-        user.getBankAccounts().add(bankAccount2);
+        userEntity.getBankAccountEntities().add(bankAccountEntity1);
+        userEntity.getBankAccountEntities().add(bankAccountEntity2);
     }
 
     @Test
@@ -58,7 +58,7 @@ public class AnalyticsServiceTest {
         try {
             Method method = AnalyticsService.class.getMethod(
                     "getMonthlySpendingByCategory",
-                    BankAccount.class,
+                    BankAccountEntity.class,
                     String.class
             );
 
@@ -68,7 +68,7 @@ public class AnalyticsServiceTest {
 
                 BigDecimal result = (BigDecimal) method.invoke(
                         analyticsService,
-                        bankAccount1,
+                        bankAccountEntity1,
                         BEAUTY_CATEGORY
                 );
 
@@ -93,19 +93,19 @@ public class AnalyticsServiceTest {
         assertEquals(BigDecimal.ZERO, result);
 
         // Категория равна null
-        result = analyticsService.getMonthlySpendingByCategory(bankAccount1, null);
+        result = analyticsService.getMonthlySpendingByCategory(bankAccountEntity1, null);
         assertEquals(BigDecimal.ZERO, result);
 
         // Нет транзакций за последний месяц
-        bankAccount1.getTransactions().clear();
+        bankAccountEntity1.getTransactionEntities().clear();
         //bankAccount1.getTransactions().add(new Transaction("5", FIFTEEN_DOLLARS, TransactionType.PAYMENT, BEAUTY_CATEGORY, FIVE_MONTHS_AGO));
-        result = analyticsService.getMonthlySpendingByCategory(bankAccount1, BEAUTY_CATEGORY);
+        result = analyticsService.getMonthlySpendingByCategory(bankAccountEntity1, BEAUTY_CATEGORY);
         assertEquals(BigDecimal.ZERO, result);
     }
 
     @Test
     public void get_transaction_history_sorted_by_amount() {
-        LinkedHashMap<String, List<Transaction>> result = analyticsService.getTransactionHistorySortedByAmount(user);
+        LinkedHashMap<String, List<TransactionEntity>> result = analyticsService.getTransactionHistorySortedByAmount(userEntity);
         assertNotNull(result);
         assertEquals(1, result.get(FOOD_CATEGORY).size());
         assertEquals(2, result.get(BEAUTY_CATEGORY).size());
@@ -119,21 +119,21 @@ public class AnalyticsServiceTest {
     @Test
     public void get_transaction_history_sorted_by_amount_invalid_input() {
         // Пользователь равен null
-        LinkedHashMap<String, List<Transaction>> result = analyticsService.getTransactionHistorySortedByAmount(null);
+        LinkedHashMap<String, List<TransactionEntity>> result = analyticsService.getTransactionHistorySortedByAmount(null);
         assertTrue(result.isEmpty());
 
         // Нет транзакций типа PAYMENT
-        user.getBankAccounts().clear();
-        bankAccount1.getTransactions().clear();
+        userEntity.getBankAccountEntities().clear();
+        bankAccountEntity1.getTransactionEntities().clear();
         //bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
-        user.getBankAccounts().add(bankAccount1);
-        result = analyticsService.getTransactionHistorySortedByAmount(user);
+        userEntity.getBankAccountEntities().add(bankAccountEntity1);
+        result = analyticsService.getTransactionHistorySortedByAmount(userEntity);
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void get_last_n_transactions() {
-        List<Transaction> result = analyticsService.getLastNTransactions(user, 2);
+        List<TransactionEntity> result = analyticsService.getLastNTransactions(userEntity, 2);
         assertEquals(2, result.size());
 
         assertEquals("4", result.get(0).getId());
@@ -142,12 +142,12 @@ public class AnalyticsServiceTest {
 
     @Test
     public void get_last_n_transactions_invalid_input() {
-        List<Transaction> result = analyticsService.getLastNTransactions(null, 2);
+        List<TransactionEntity> result = analyticsService.getLastNTransactions(null, 2);
         assertTrue(result.isEmpty());
 
         // Нет транзакций
-        user.getBankAccounts().clear();
-        result = analyticsService.getLastNTransactions(user, 2);
+        userEntity.getBankAccountEntities().clear();
+        result = analyticsService.getLastNTransactions(userEntity, 2);
         assertTrue(result.isEmpty());
     }
 
@@ -157,7 +157,7 @@ public class AnalyticsServiceTest {
         try {
             Method method = AnalyticsService.class.getMethod(
                     "getTopNLargestTransactions",
-                    User.class,
+                    UserEntity.class,
                     int.class
             );
 
@@ -165,15 +165,15 @@ public class AnalyticsServiceTest {
                 long startTime = System.currentTimeMillis();
                 System.out.println(method.getName() + " started");
 
-                PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(user, 2);
+                PriorityQueue<TransactionEntity> result = analyticsService.getTopNLargestTransactions(userEntity, 2);
 
                 long endTime = System.currentTimeMillis();
                 System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
 
                 assertEquals(2, result.size());
 
-                Transaction first = result.poll();
-                Transaction second = result.poll();
+                TransactionEntity first = result.poll();
+                TransactionEntity second = result.poll();
 
                 assertEquals(TWENTY_DOLLARS, first.getValue());
                 assertEquals(TWENTY_DOLLARS, second.getValue());
@@ -186,39 +186,39 @@ public class AnalyticsServiceTest {
     @Test
     public void get_top_n_largest_transactions_invalid_input() {
         // Пользователь равен null
-        PriorityQueue<Transaction> result = analyticsService.getTopNLargestTransactions(null, 2);
+        PriorityQueue<TransactionEntity> result = analyticsService.getTopNLargestTransactions(null, 2);
         assertTrue(result.isEmpty());
 
         // Нет транзакций типа PAYMENT
-        user.getBankAccounts().clear();
-        bankAccount1.getTransactions().clear();
+        userEntity.getBankAccountEntities().clear();
+        bankAccountEntity1.getTransactionEntities().clear();
         //bankAccount1.getTransactions().add(new Transaction("6", TEN_DOLLARS, TransactionType.DEPOSIT, BEAUTY_CATEGORY, TEN_DAYS_AGO));
-        user.getBankAccounts().add(bankAccount1);
-        result = analyticsService.getTopNLargestTransactions(user, 2);
+        userEntity.getBankAccountEntities().add(bankAccountEntity1);
+        result = analyticsService.getTopNLargestTransactions(userEntity, 2);
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void analyze_performance() {
 
-        List<Transaction> transactions = user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        List<TransactionEntity> transactionEntities = userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .collect(Collectors.toList());
 
         long startTime = System.currentTimeMillis();
-        transactions.stream()
+        transactionEntities.stream()
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
                 .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
-                .sorted(Comparator.comparing(Transaction::getValue))
+                .sorted(Comparator.comparing(TransactionEntity::getValue))
                 .count();
         long endTime = System.currentTimeMillis();
         System.out.println("Sequential stream time: " + (endTime - startTime) + " ms");
 
         startTime = System.currentTimeMillis();
-        transactions.parallelStream()
+        transactionEntities.parallelStream()
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
                 .filter(transaction -> transaction.getValue().compareTo(new BigDecimal("1000")) > 0)
-                .sorted(Comparator.comparing(Transaction::getValue))
+                .sorted(Comparator.comparing(TransactionEntity::getValue))
                 .count();
         endTime = System.currentTimeMillis();
         System.out.println("Parallel stream time: " + (endTime - startTime) + " ms");

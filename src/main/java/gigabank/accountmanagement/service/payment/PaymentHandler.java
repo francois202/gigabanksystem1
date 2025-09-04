@@ -1,6 +1,6 @@
 package gigabank.accountmanagement.service.payment;
 
-import gigabank.accountmanagement.entity.BankAccount;
+import gigabank.accountmanagement.entity.BankAccountEntity;
 import gigabank.accountmanagement.enums.PaymentType;
 import gigabank.accountmanagement.service.BankAccountService;
 import gigabank.accountmanagement.service.notification.NotificationService;
@@ -26,7 +26,7 @@ public class PaymentHandler implements ServiceHandler {
     }
 
     @Override
-    public void processPayment(BankAccount account, BigDecimal amount, String authorizationId, PaymentType paymentType) {
+    public void processPayment(BankAccountEntity account, BigDecimal amount, String authorizationId, PaymentType paymentType) {
         payService.authorize(authorizationId, amount);
         bankAccountService.withdraw(account, amount);
 

@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service.payment.strategies;
 
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;
@@ -26,19 +26,17 @@ public class CardPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
-    public void process(BankAccount account, BigDecimal amount, Map<String, String> details) {
+    public void process(BankAccountEntity account, BigDecimal amount, Map<String, String> details) {
         account.setBalance(account.getBalance().subtract(amount));
 
         String cardNumber = details.get("cardNumber");
         String merchantName = details.get("merchantName");
 
-        Transaction.builder()
+        TransactionEntity.builder()
                 .id(account.getId())
                 .value(amount)
                 .type(TransactionType.PAYMENT)
                 .createdDate(LocalDateTime.now())
-                .cardNumber(cardNumber)
-                .merchantName(merchantName)
                 .build();
 
         System.out.println("Processed card payment for account " + account.getId());

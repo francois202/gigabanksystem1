@@ -1,7 +1,7 @@
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.UserEntity;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,50 +16,50 @@ import java.util.function.Predicate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TransactionServiceTest {
+public class TransactionEntityServiceTest {
     private TransactionService transactionService = new TransactionService();
-    private User user;
-    private BankAccount bankAccount1;
-    private BankAccount bankAccount2;
+    private UserEntity userEntity;
+    private BankAccountEntity bankAccountEntity1;
+    private BankAccountEntity bankAccountEntity2;
 
     @BeforeEach
     public void setUp() {
         transactionService = new TransactionService();
-        user = new User();
-        bankAccount1 = new BankAccount();
-        bankAccount2 = new BankAccount();
+        userEntity = new UserEntity();
+        bankAccountEntity1 = new BankAccountEntity();
+        bankAccountEntity2 = new BankAccountEntity();
 
 //        bankAccount1.getTransactions().add(new Transaction("1", new BigDecimal("100.00"), TransactionType.PAYMENT, "Category1", LocalDateTime.now()));
 //        bankAccount1.getTransactions().add(new Transaction("2", new BigDecimal("50.00"), TransactionType.PAYMENT, "Category2", LocalDateTime.now().minusDays(10)));
 //        bankAccount2.getTransactions().add(new Transaction("3", new BigDecimal("200.00"), TransactionType.PAYMENT, "Category1", LocalDateTime.now().minusMonths(1)));
 //        bankAccount2.getTransactions().add(new Transaction("4", new BigDecimal("150.00"), TransactionType.PAYMENT, "Category3", LocalDateTime.now().minusDays(5)));
 
-        user.getBankAccounts().add(bankAccount1);
-        user.getBankAccounts().add(bankAccount2);
+        userEntity.getBankAccountEntities().add(bankAccountEntity1);
+        userEntity.getBankAccountEntities().add(bankAccountEntity2);
     }
 
     @Test
     public void testFilterTransactions() {
-        Predicate<Transaction> isPayment = transaction -> TransactionType.PAYMENT.equals(transaction.getType());
-        List<Transaction> result = transactionService.filterTransactions(user, isPayment);
+        Predicate<TransactionEntity> isPayment = transaction -> TransactionType.PAYMENT.equals(transaction.getType());
+        List<TransactionEntity> result = transactionService.filterTransactions(userEntity, isPayment);
         assertEquals(4, result.size());
 
-        Predicate<Transaction> isLargePayment = transaction -> transaction.getValue().compareTo(new BigDecimal("100.00")) > 0;
-        result = transactionService.filterTransactions(user, isLargePayment);
+        Predicate<TransactionEntity> isLargePayment = transaction -> transaction.getValue().compareTo(new BigDecimal("100.00")) > 0;
+        result = transactionService.filterTransactions(userEntity, isLargePayment);
         assertEquals(2, result.size());
     }
 
     @Test
     public void testFilterTransactions_nullUser() {
-        Predicate<Transaction> isPayment = transaction -> TransactionType.PAYMENT.equals(transaction.getType());
-        List<Transaction> result = transactionService.filterTransactions(null, isPayment);
+        Predicate<TransactionEntity> isPayment = transaction -> TransactionType.PAYMENT.equals(transaction.getType());
+        List<TransactionEntity> result = transactionService.filterTransactions(null, isPayment);
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void testTransformTransactions() {
-        Function<Transaction, String> transactionToString = transaction -> transaction.getId() + ": " + transaction.getValue();
-        List<String> result = transactionService.transformTransactions(user, transactionToString);
+        Function<TransactionEntity, String> transactionToString = transaction -> transaction.getId() + ": " + transaction.getValue();
+        List<String> result = transactionService.transformTransactions(userEntity, transactionToString);
         assertEquals(4, result.size());
         assertTrue(result.contains("1: 100.00"));
         assertTrue(result.contains("2: 50.00"));
@@ -69,7 +69,7 @@ public class TransactionServiceTest {
 
     @Test
     public void testTransformTransactions_nullUser() {
-        Function<Transaction, String> transactionToString = transaction -> transaction.getId() + ": " + transaction.getValue();
+        Function<TransactionEntity, String> transactionToString = transaction -> transaction.getId() + ": " + transaction.getValue();
         List<String> result = transactionService.transformTransactions(null, transactionToString);
         assertTrue(result.isEmpty());
     }
@@ -77,8 +77,8 @@ public class TransactionServiceTest {
     @Test
     public void testProcessTransactions() {
         List<String> processedIds = new ArrayList<>();
-        Consumer<Transaction> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
-        transactionService.processTransactions(user, collectTransactionIds);
+        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
+        transactionService.processTransactions(userEntity, collectTransactionIds);
         assertEquals(4, processedIds.size());
         assertTrue(processedIds.contains("1"));
         assertTrue(processedIds.contains("2"));
@@ -89,7 +89,7 @@ public class TransactionServiceTest {
     @Test
     public void testProcessTransactions_nullUser() {
         List<String> processedIds = new ArrayList<>();
-        Consumer<Transaction> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
+        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
         transactionService.processTransactions(null, collectTransactionIds);
         assertTrue(processedIds.isEmpty());
     }
