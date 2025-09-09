@@ -1,9 +1,9 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.UserEntity;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;
 import gigabank.accountmanagement.service.payment.strategies.PaymentStrategy;
@@ -56,55 +56,52 @@ public class BankAccountService {
         logger.info("PreDestroy method called - BankAccountService bean is about to be destroyed");
     }
 
-    public BankAccount findAccountById(int accountId) {
+    public BankAccountEntity findAccountById(int accountId) {
         return createTestAccount();
     }
 
-    public void deposit(BankAccount account, BigDecimal amount) {
+    public void deposit(BankAccountEntity account, BigDecimal amount) {
         account.setBalance(account.getBalance().add(amount));
     }
 
-    public void withdraw(BankAccount account, BigDecimal amount) {
+    public void withdraw(BankAccountEntity account, BigDecimal amount) {
         account.setBalance(account.getBalance().subtract(amount));
     }
 
-    public void processPayment(BankAccount account, BigDecimal amount,
+    public void processPayment(BankAccountEntity account, BigDecimal amount,
                                PaymentStrategy strategy, Map<String, String> details) {
         strategy.process(account, amount, details);
     }
 
-    public static BankAccount createTestAccount() {
-        User testUser = new User();
-        testUser.setId("user123");
-        testUser.setFirstName("John");
-        testUser.setMiddleName("K");
-        testUser.setLastName("Doe");
-        testUser.setBirthDate(LocalDateTime.now().minusYears(25).toLocalDate());
-        testUser.setEmail("john.doe@example.com");
-        testUser.setPhoneNumber("+1234567890");
+    public static BankAccountEntity createTestAccount() {
+        UserEntity testUserEntity = new UserEntity();
+        testUserEntity.setId(123L);
+        testUserEntity.setName("John");
+        testUserEntity.setEmail("john.doe@example.com");
+        testUserEntity.setPhoneNumber("+1234567890");
 
-        BankAccount account = new BankAccount();
-        account.setId("acc123");
+        BankAccountEntity account = new BankAccountEntity();
+        account.setId(124L);
         account.setBalance(new BigDecimal("5000.00"));
-        account.setOwner(testUser);
+        account.setOwner(testUserEntity);
 
-        Transaction transaction1 = Transaction.builder()
-                .id("tx001")
+        TransactionEntity transactionEntity1 = TransactionEntity.builder()
+                .id(125L)
                 .value(new BigDecimal("100.00"))
                 .type(TransactionType.PAYMENT)
                 .category("Electronics")
                 .createdDate(LocalDateTime.now().minusDays(5))
                 .build();
 
-        Transaction transaction2 = Transaction.builder()
-                .id("tx002")
+        TransactionEntity transactionEntity2 = TransactionEntity.builder()
+                .id(126L)
                 .value(new BigDecimal("200.00"))
                 .type(TransactionType.DEPOSIT)
                 .category("Groceries")
                 .createdDate(LocalDateTime.now().minusDays(2))
                 .build();
 
-        account.getTransactions().addAll(List.of(transaction1, transaction2));
+        account.getTransactionEntities().addAll(List.of(transactionEntity1, transactionEntity2));
 
         return account;
     }

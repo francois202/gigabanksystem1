@@ -1,8 +1,8 @@
 package gigabank.accountmanagement.controllers;
 
 import gigabank.accountmanagement.dto.DepositWithdrawRequest;
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.service.BankAccountService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +21,8 @@ public class BankAccountController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BankAccount> getAccount(@PathVariable Integer id) {
-        BankAccount accountById = bankAccountService.findAccountById(id);
+    public ResponseEntity<BankAccountEntity> getAccount(@PathVariable Integer id) {
+        BankAccountEntity accountById = bankAccountService.findAccountById(id);
         if (accountById == null) {
             return ResponseEntity.notFound().build();
         }
@@ -30,8 +30,8 @@ public class BankAccountController {
     }
 
     @PostMapping
-    public ResponseEntity<BankAccount> createAccount() {
-        BankAccount accountCreated = BankAccountService.createTestAccount();
+    public ResponseEntity<BankAccountEntity> createAccount() {
+        BankAccountEntity accountCreated = BankAccountService.createTestAccount();
         return ResponseEntity.status(HttpStatus.CREATED).body(accountCreated);
     }
 
@@ -52,12 +52,12 @@ public class BankAccountController {
     }
 
     @GetMapping("/{id}/transactions")
-    public ResponseEntity<List<Transaction>> getTransactions(@PathVariable Integer id) {
-        List<Transaction> transactions = bankAccountService.findAccountById(id).getTransactions();
-        if (transactions == null) {
+    public ResponseEntity<List<TransactionEntity>> getTransactions(@PathVariable Integer id) {
+        List<TransactionEntity> transactionEntities = bankAccountService.findAccountById(id).getTransactionEntities();
+        if (transactionEntities == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(transactions);
+        return ResponseEntity.ok(transactionEntities);
     }
 
 }

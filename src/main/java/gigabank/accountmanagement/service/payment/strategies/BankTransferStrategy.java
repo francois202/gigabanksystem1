@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service.payment.strategies;
 
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;
@@ -26,17 +26,16 @@ public class BankTransferStrategy implements PaymentStrategy {
     }
 
     @Override
-    public void process(BankAccount account, BigDecimal amount, Map<String, String> details) {
+    public void process(BankAccountEntity account, BigDecimal amount, Map<String, String> details) {
         account.setBalance(account.getBalance().subtract(amount));
 
         String bankName = details.get("bankName");
 
-        Transaction.builder()
+        TransactionEntity.builder()
                 .id(account.getId())
                 .value(amount)
                 .type(TransactionType.PAYMENT)
                 .createdDate(LocalDateTime.now())
-                .bankName(bankName)
                 .build();
 
         System.out.println("Processed bank transfer for account " + account.getId());

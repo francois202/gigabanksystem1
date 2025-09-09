@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service;
 
 import gigabank.accountmanagement.dto.UserRequest;
-import gigabank.accountmanagement.entity.BankAccount;
+import gigabank.accountmanagement.entity.BankAccountEntity;
 import gigabank.accountmanagement.enums.PaymentType;
 import gigabank.accountmanagement.service.payment.PaymentHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class BankManager {
             String authorizationId = UUID.randomUUID().toString();
             PaymentType paymentType = PaymentType.valueOf(request.getPaymentType());
 
-            BankAccount account = bankAccountService.findAccountById(request.getAccountId());
+            BankAccountEntity account = bankAccountService.findAccountById(request.getAccountId());
             if (account == null) {
                 System.out.println("No account with ID: " + request.getAccountId());
                 continue;

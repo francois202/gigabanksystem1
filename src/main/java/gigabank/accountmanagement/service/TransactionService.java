@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.Transaction;
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.entity.UserEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -42,17 +42,17 @@ public class TransactionService {
     /**
      * Фильтрует транзакции пользователя с использованием Predicate.
      *
-     * @param user      - пользователь
+     * @param userEntity      - пользователь
      * @param predicate - условие фильтрации
      * @return список транзакций, удовлетворяющих условию
      */
-    public List<Transaction> filterTransactions(User user, Predicate<Transaction> predicate) {
-        if (user == null) {
+    public List<TransactionEntity> filterTransactions(UserEntity userEntity, Predicate<TransactionEntity> predicate) {
+        if (userEntity == null) {
             return Collections.emptyList();
         }
 
-        return user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        return userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .filter(predicate)
                 .collect(Collectors.toList());
     }
@@ -60,16 +60,16 @@ public class TransactionService {
     /**
      * Преобразует транзакции пользователя с использованием Function.
      *
-     * @param user     - пользователь
+     * @param userEntity     - пользователь
      * @param function - функция преобразования
      * @return список строковых представлений транзакций
      */
-    public List<String> transformTransactions(User user, Function<Transaction, String> function) {
-        if (user == null) {
+    public List<String> transformTransactions(UserEntity userEntity, Function<TransactionEntity, String> function) {
+        if (userEntity == null) {
             return Collections.emptyList();
         }
-        return user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        return userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .map(function)
                 .collect(Collectors.toList());
 
@@ -78,16 +78,16 @@ public class TransactionService {
     /**
      * Обрабатывает транзакции пользователя с использованием Consumer.
      *
-     * @param user     - пользователь
+     * @param userEntity     - пользователь
      * @param consumer - функция обработки
      */
-    public void processTransactions(User user, Consumer<Transaction> consumer) {
-        if (user == null) {
+    public void processTransactions(UserEntity userEntity, Consumer<TransactionEntity> consumer) {
+        if (userEntity == null) {
             return;
         }
 
-        user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .forEach(consumer);
     }
 
@@ -97,7 +97,7 @@ public class TransactionService {
      * @param supplier - поставщик
      * @return созданный список транзакций
      */
-    public List<Transaction> createTransactionList(Supplier<List<Transaction>> supplier) {
+    public List<TransactionEntity> createTransactionList(Supplier<List<TransactionEntity>> supplier) {
         return supplier.get();
     }
 }

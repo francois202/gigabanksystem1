@@ -1,10 +1,9 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.annotations.LogExecutionTime;
-import gigabank.accountmanagement.entity.BankAccount;
-import gigabank.accountmanagement.entity.Transaction;
+import gigabank.accountmanagement.entity.BankAccountEntity;
+import gigabank.accountmanagement.entity.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -25,24 +24,23 @@ public class AnalyticsService {
     /**
      * Вывод суммы потраченных средств на категорию за последний месяц
      *
-     * @param bankAccount - счет
+     * @param bankAccountEntity - счет
      * @param category    - категория
      */
-    @LogExecutionTime
-    public BigDecimal getMonthlySpendingByCategory(BankAccount bankAccount, String category) {
+    public BigDecimal getMonthlySpendingByCategory(BankAccountEntity bankAccountEntity, String category) {
         BigDecimal totalSum = BigDecimal.ZERO;
 
-        if (bankAccount == null || !transactionService.isValidCategory(category)) {
+        if (bankAccountEntity == null || !transactionService.isValidCategory(category)) {
             return totalSum;
         }
 
         LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
 
-        totalSum = bankAccount.getTransactions().stream()
+        totalSum = bankAccountEntity.getTransactionEntities().stream()
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
                         && StringUtils.equals(transaction.getCategory(), category)
                         && transaction.getCreatedDate().isAfter(oneMontAgo))
-                .map(Transaction::getValue)
+                .map(TransactionEntity::getValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return totalSum;
@@ -52,26 +50,26 @@ public class AnalyticsService {
      * Вывод суммы потраченных средств на n категорий за последний месяц
      * со всех счетов пользователя
      *
-     * @param user       - пользователь
+     * @param userEntity       - пользователь
      * @param categories - категории
      * @return мапа категория - сумма потраченных средств
      */
-    public Map<String, BigDecimal> getMonthlySpendingByCategories(User user, Set<String> categories) {
+    public Map<String, BigDecimal> getMonthlySpendingByCategories(UserEntity userEntity, Set<String> categories) {
         Map<String, BigDecimal> resultMap = new HashMap<>();
         Set<String> validCategories = transactionService.validateCategories(categories);
-        if (user == null || validCategories.isEmpty()) {
+        if (userEntity == null || validCategories.isEmpty()) {
             return resultMap;
         }
 
         LocalDateTime oneMontAgo = LocalDateTime.now().minusMonths(1L);
 
-        resultMap =  user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        resultMap =  userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType())
                         && validCategories.contains(transaction.getCategory())
                         && transaction.getCreatedDate().isAfter(oneMontAgo))
-                .collect(Collectors.groupingBy(Transaction::getCategory,
-                        Collectors.reducing(BigDecimal.ZERO, Transaction::getValue, BigDecimal::add)));
+                .collect(Collectors.groupingBy(TransactionEntity::getCategory,
+                        Collectors.reducing(BigDecimal.ZERO, TransactionEntity::getValue, BigDecimal::add)));
 
         return resultMap;
     }
@@ -79,20 +77,20 @@ public class AnalyticsService {
     /**
      * Вывод платежных операций по всем счетам и по всем категориям от наибольшей к наименьшей
      *
-     * @param user - пользователь
+     * @param userEntity - пользователь
      * @return мапа категория - все операции совершенные по ней, отсортированные от наибольшей к наименьшей
      */
-    public LinkedHashMap<String, List<Transaction>> getTransactionHistorySortedByAmount(User user) {
-        LinkedHashMap<String, List<Transaction>> resultMap = new LinkedHashMap<>();
-        if (user == null) {
+    public LinkedHashMap<String, List<TransactionEntity>> getTransactionHistorySortedByAmount(UserEntity userEntity) {
+        LinkedHashMap<String, List<TransactionEntity>> resultMap = new LinkedHashMap<>();
+        if (userEntity == null) {
             return resultMap;
         }
 
-        resultMap = user.getBankAccounts().stream()
-                .flatMap(bankAccount ->bankAccount.getTransactions().stream())
+        resultMap = userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount ->bankAccount.getTransactionEntities().stream())
                 .filter(transaction ->TransactionType.PAYMENT.equals(transaction.getType()))
-                .sorted(Comparator.comparing(Transaction::getValue))
-                .collect(Collectors.groupingBy(Transaction::getCategory, LinkedHashMap::new, Collectors.toList()));
+                .sorted(Comparator.comparing(TransactionEntity::getValue))
+                .collect(Collectors.groupingBy(TransactionEntity::getCategory, LinkedHashMap::new, Collectors.toList()));
 
         return resultMap;
     }
@@ -100,50 +98,49 @@ public class AnalyticsService {
     /**
      * Вывод последних N транзакций пользователя.
      *
-     * @param user - пользователь
+     * @param userEntity - пользователь
      * @param n    - количество последних транзакций
      * @return LinkedHashMap, где ключом является идентификатор транзакции, а значением — объект Transaction
      */
-    public List<Transaction> getLastNTransactions(User user, int n) {
-        List<Transaction> lastTransactions = new ArrayList<>();
-        if (user == null) {
-            return lastTransactions;
+    public List<TransactionEntity> getLastNTransactions(UserEntity userEntity, int n) {
+        List<TransactionEntity> lastTransactionEntities = new ArrayList<>();
+        if (userEntity == null) {
+            return lastTransactionEntities;
         }
 
-        lastTransactions = user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
-                .sorted(Comparator.comparing(Transaction::getCreatedDate).reversed())
+        lastTransactionEntities = userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
+                .sorted(Comparator.comparing(TransactionEntity::getCreatedDate).reversed())
                 .limit(n)
                 .collect(Collectors.toList());
 
-        return lastTransactions;
+        return lastTransactionEntities;
     }
 
     /**
      * Вывод топ-N самых больших платежных транзакций пользователя.
      *
-     * @param user - пользователь
+     * @param userEntity - пользователь
      * @param n    - количество топовых транзакций
      * @return PriorityQueue, где транзакции хранятся в порядке убывания их значения
      */
-    @LogExecutionTime
-    public PriorityQueue<Transaction> getTopNLargestTransactions(User user, int n) {
-        PriorityQueue<Transaction> transactionPriorityQueue =
-                new PriorityQueue<>(Comparator.comparing(Transaction::getValue));
+    public PriorityQueue<TransactionEntity> getTopNLargestTransactions(UserEntity userEntity, int n) {
+        PriorityQueue<TransactionEntity> transactionEntityPriorityQueue =
+                new PriorityQueue<>(Comparator.comparing(TransactionEntity::getValue));
 
-        if (user == null) {
-            return transactionPriorityQueue;
+        if (userEntity == null) {
+            return transactionEntityPriorityQueue;
         }
 
-        transactionPriorityQueue = user.getBankAccounts().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactions().stream())
+        transactionEntityPriorityQueue = userEntity.getBankAccountEntities().stream()
+                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
                 .filter(transaction -> TransactionType.PAYMENT.equals(transaction.getType()))
-                .sorted(Comparator.comparing(Transaction::getValue).reversed())
+                .sorted(Comparator.comparing(TransactionEntity::getValue).reversed())
                 .limit(n)
                 .collect(Collectors.toCollection
-                        (() -> new PriorityQueue<>(Comparator.comparing(Transaction::getValue).reversed())));
+                        (() -> new PriorityQueue<>(Comparator.comparing(TransactionEntity::getValue).reversed())));
 
-        return transactionPriorityQueue;
+        return transactionEntityPriorityQueue;
     }
 }
 

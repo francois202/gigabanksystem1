@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service.notification;
 
-import gigabank.accountmanagement.entity.User;
+import gigabank.accountmanagement.entity.UserEntity;
 
 public interface NotificationService {
-    void sendPaymentNotification(User user);
+    void sendPaymentNotification(UserEntity userEntity);
 }

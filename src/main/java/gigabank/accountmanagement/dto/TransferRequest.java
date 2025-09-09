@@ -1,6 +1,6 @@
 package gigabank.accountmanagement.dto;
 
-import gigabank.accountmanagement.entity.BankAccount;
+import gigabank.accountmanagement.entity.BankAccountEntity;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,7 +10,7 @@ import java.util.Map;
 @Data
 public class TransferRequest {
     @NotNull
-    BankAccount account;
+    BankAccountEntity account;
 
     @NotNull
     private BigDecimal amount;
