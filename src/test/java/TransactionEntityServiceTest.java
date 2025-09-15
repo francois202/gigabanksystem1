@@ -1,7 +1,8 @@
-import gigabank.accountmanagement.entity.BankAccountEntity;
-import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.UserEntity;
+import gigabank.accountmanagement.model.UserEntity;
+import gigabank.accountmanagement.repository.TransactionRepository;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,14 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TransactionEntityServiceTest {
-    private TransactionService transactionService = new TransactionService();
+    private TransactionRepository transactionRepository;
+    private TransactionService transactionService = new TransactionService(transactionRepository);
     private UserEntity userEntity;
     private BankAccountEntity bankAccountEntity1;
     private BankAccountEntity bankAccountEntity2;
 
     @BeforeEach
     public void setUp() {
-        transactionService = new TransactionService();
+        //transactionService = new TransactionService();
         userEntity = new UserEntity();
         bankAccountEntity1 = new BankAccountEntity();
         bankAccountEntity2 = new BankAccountEntity();
@@ -77,7 +79,7 @@ public class TransactionEntityServiceTest {
     @Test
     public void testProcessTransactions() {
         List<String> processedIds = new ArrayList<>();
-        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
+        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId().toString());
         transactionService.processTransactions(userEntity, collectTransactionIds);
         assertEquals(4, processedIds.size());
         assertTrue(processedIds.contains("1"));
@@ -89,7 +91,7 @@ public class TransactionEntityServiceTest {
     @Test
     public void testProcessTransactions_nullUser() {
         List<String> processedIds = new ArrayList<>();
-        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId());
+        Consumer<TransactionEntity> collectTransactionIds = transaction -> processedIds.add(transaction.getId().toString());
         transactionService.processTransactions(null, collectTransactionIds);
         assertTrue(processedIds.isEmpty());
     }

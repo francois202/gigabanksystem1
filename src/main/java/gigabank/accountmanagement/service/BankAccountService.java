@@ -1,18 +1,27 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.BankAccountEntity;
-import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.exception.AccountNotFoundException;
+import gigabank.accountmanagement.exception.OperationForbiddenException;
+import gigabank.accountmanagement.exception.ValidationException;
+import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.UserEntity;
+import gigabank.accountmanagement.model.UserEntity;
+import gigabank.accountmanagement.repository.BankAccountRepository;
+import gigabank.accountmanagement.repository.TransactionRepository;
+import gigabank.accountmanagement.repository.UserRepository;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;
 import gigabank.accountmanagement.service.payment.strategies.PaymentStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,21 +33,27 @@ import java.util.logging.Logger;
  * Сервис отвечает за управление счетами, включая создание, удаление и пополнение
  */
 @Service
+@Transactional
 public class BankAccountService {
     private static final Logger logger = Logger.getLogger(BankAccountService.class.getName());
+
+    private final BankAccountRepository bankAccountRepository;
+    private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
     private final PaymentGatewayService paymentGatewayService;
+
     @Qualifier("emailNotificationService")
     private final NotificationService notificationService;
 
-    @Value("${notification.sender.email}")
-    private String senderEmail;
-
-    @Value("${notification.sender.phone}")
-    private String senderPhone;
-
     @Autowired
-    public BankAccountService(NotificationService notificationService,
+    public BankAccountService(BankAccountRepository bankAccountRepository,
+                              TransactionRepository transactionRepository,
+                              UserRepository userRepository,
+                              @Qualifier("emailNotificationService") NotificationService notificationService,
                               PaymentGatewayService paymentGatewayService) {
+        this.bankAccountRepository = bankAccountRepository;
+        this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
         this.paymentGatewayService = paymentGatewayService;
         this.notificationService = notificationService;
         logger.info("Initializing test accounts data...");
@@ -47,8 +62,6 @@ public class BankAccountService {
     @PostConstruct
     public void init() {
         logger.info("PostConstruct method called - BankAccountService bean initialization complete");
-        logger.info("Configured sender email: " + senderEmail);
-        logger.info("Configured sender phone: " + senderPhone);
     }
 
     @PreDestroy
@@ -56,21 +69,51 @@ public class BankAccountService {
         logger.info("PreDestroy method called - BankAccountService bean is about to be destroyed");
     }
 
-    public BankAccountEntity findAccountById(int accountId) {
-        return createTestAccount();
+    public Page<BankAccountEntity> getAllAccounts(Pageable pageable) {
+        return bankAccountRepository.findAll(pageable);
     }
 
-    public void deposit(BankAccountEntity account, BigDecimal amount) {
+    public BankAccountEntity findAccountById(Long accountId) {
+        return bankAccountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    public void closeAccount(Long accountId) {
+        BankAccountEntity account = findAccountById(accountId);
+        if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new ValidationException("Невозможно закрыть счет с ненулевым балансом");
+        }
+        transactionRepository.deleteByAccountId(accountId);
+        bankAccountRepository.deleteById(accountId);
+    }
+
+    public BankAccountEntity toggleAccountBlock(Long accountId) {
+        BankAccountEntity account = findAccountById(accountId);
+
+        account.setBlocked(!account.isBlocked());
+
+        return bankAccountRepository.save(account);
+    }
+
+    public void deposit(Long accountId, BigDecimal amount) {
+        BankAccountEntity account = findAccountById(accountId);
+        if (account.isBlocked()) {
+            throw new OperationForbiddenException("Аккаунт заблокирован");
+        }
         account.setBalance(account.getBalance().add(amount));
+        bankAccountRepository.save(account);
     }
 
-    public void withdraw(BankAccountEntity account, BigDecimal amount) {
+    public void withdraw(Long accountId, BigDecimal amount) {
+        BankAccountEntity account = findAccountById(accountId);
+        if (account.isBlocked()) {
+            throw new OperationForbiddenException("Аккаунт заблокирован");
+        }
+        if (account.getBalance().compareTo(amount) < 0) {
+            throw new ValidationException("Сумма снятия превышает баланс на счете");
+        }
         account.setBalance(account.getBalance().subtract(amount));
-    }
-
-    public void processPayment(BankAccountEntity account, BigDecimal amount,
-                               PaymentStrategy strategy, Map<String, String> details) {
-        strategy.process(account, amount, details);
+        bankAccountRepository.save(account);
     }
 
     public static BankAccountEntity createTestAccount() {

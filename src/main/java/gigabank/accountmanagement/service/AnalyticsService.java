@@ -1,9 +1,9 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.BankAccountEntity;
-import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.UserEntity;
+import gigabank.accountmanagement.model.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;

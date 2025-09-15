@@ -1,9 +1,15 @@
 package gigabank.accountmanagement.service;
 
-import gigabank.accountmanagement.entity.TransactionEntity;
-import gigabank.accountmanagement.entity.UserEntity;
+import gigabank.accountmanagement.enums.TransactionType;
+import gigabank.accountmanagement.model.TransactionEntity;
+import gigabank.accountmanagement.model.UserEntity;
+import gigabank.accountmanagement.repository.TransactionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +28,28 @@ public class TransactionService {
     //реализация данного Set - неизменяемый стрим, не допускающий передачу null значений
     public static final Set<String> TRANSACTION_CATEGORIES = Set.of(
             "Health", "Beauty", "Education");
+
+    private final TransactionRepository transactionRepository;
+
+    public TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
+    }
+
+    public Page<TransactionEntity> getFilteredTransactions(Long accountId, TransactionType type,
+                                                           String category, LocalDateTime startDate,
+                                                           Pageable pageable) {
+
+        String accountIdStr = accountId != null ? accountId.toString() : null;
+        String typeStr = type != null ? type.name() : null;
+        String startDateStr = startDate != null ? startDate.toString() : null;
+
+        return transactionRepository.findWithFiltersNative(
+                accountIdStr,
+                typeStr,
+                category,
+                startDateStr,
+                pageable);
+    }
 
 
     public Boolean isValidCategory(String category) {
@@ -100,4 +128,6 @@ public class TransactionService {
     public List<TransactionEntity> createTransactionList(Supplier<List<TransactionEntity>> supplier) {
         return supplier.get();
     }
+
+
 }

@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.entity;
+package gigabank.accountmanagement.model;
 
 import gigabank.accountmanagement.enums.TransactionType;
 import jakarta.persistence.*;
@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ public class TransactionEntity {
     @Column(name = "amount", nullable = false)
     private BigDecimal value;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionType type;
 
@@ -34,6 +36,7 @@ public class TransactionEntity {
     private String category;
 
     @Column(name = "date", nullable = false)
+    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdDate;
 
     @Column(name = "source")

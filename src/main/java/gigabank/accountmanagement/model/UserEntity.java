@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.entity;
+package gigabank.accountmanagement.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package gigabank.accountmanagement.entity;
+package gigabank.accountmanagement.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -29,6 +29,9 @@ public class BankAccountEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity owner;
+
+    @Column(name = "is_blocked", nullable = false)
+    private boolean isBlocked;
 
     @OneToMany(mappedBy = "bankAccountEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionEntity> transactionEntities = new ArrayList<>();

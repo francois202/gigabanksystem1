@@ -1,7 +1,7 @@
 package gigabank.accountmanagement.service.payment.strategies;
 
-import gigabank.accountmanagement.entity.BankAccountEntity;
-import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.service.notification.NotificationService;
 import gigabank.accountmanagement.service.payment.PaymentGatewayService;

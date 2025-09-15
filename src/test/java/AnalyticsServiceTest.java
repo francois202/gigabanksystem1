@@ -1,9 +1,9 @@
-import gigabank.accountmanagement.annotations.LogExecutionTime;
-import gigabank.accountmanagement.dto.UserRequest;
-import gigabank.accountmanagement.entity.BankAccountEntity;
-import gigabank.accountmanagement.entity.TransactionEntity;
+import gigabank.accountmanagement.dto.request.UserRequest;
+import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.entity.UserEntity;
+import gigabank.accountmanagement.model.UserEntity;
+import gigabank.accountmanagement.repository.TransactionRepository;
 import gigabank.accountmanagement.service.AnalyticsService;
 import gigabank.accountmanagement.service.TransactionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,9 @@ public class AnalyticsServiceTest {
     private static final LocalDateTime THREE_DAYS_AGO = LocalDateTime.now().minusDays(3);
     private static final LocalDateTime ONE_DAY_AGO = LocalDateTime.now().minusDays(1);
 
-    private TransactionService transactionService = new TransactionService();
+    private TransactionRepository transactionRepository;
+
+    private TransactionService transactionService = new TransactionService(transactionRepository);
     private AnalyticsService analyticsService = new AnalyticsService(transactionService);
     private UserEntity userEntity = new UserEntity();
     private BankAccountEntity bankAccountEntity1;
@@ -62,21 +64,21 @@ public class AnalyticsServiceTest {
                     String.class
             );
 
-            if (method.isAnnotationPresent(LogExecutionTime.class)) {
-                long startTime = System.currentTimeMillis();
-                System.out.println(method.getName() + " started");
 
-                BigDecimal result = (BigDecimal) method.invoke(
-                        analyticsService,
-                        bankAccountEntity1,
-                        BEAUTY_CATEGORY
-                );
+            long startTime = System.currentTimeMillis();
+            System.out.println(method.getName() + " started");
 
-                long endTime = System.currentTimeMillis();
-                System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
+            BigDecimal result = (BigDecimal) method.invoke(
+                    analyticsService,
+                    bankAccountEntity1,
+                    BEAUTY_CATEGORY
+            );
 
-                assertEquals(TEN_DOLLARS, result);
-            }
+            long endTime = System.currentTimeMillis();
+            System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
+
+            assertEquals(TEN_DOLLARS, result);
+
         } catch (NoSuchMethodException e) {
             fail("Метод не найден: " + e.getMessage());
         } catch (IllegalAccessException e) {
@@ -161,23 +163,22 @@ public class AnalyticsServiceTest {
                     int.class
             );
 
-            if (method.isAnnotationPresent(LogExecutionTime.class)) {
-                long startTime = System.currentTimeMillis();
-                System.out.println(method.getName() + " started");
+            long startTime = System.currentTimeMillis();
+            System.out.println(method.getName() + " started");
 
-                PriorityQueue<TransactionEntity> result = analyticsService.getTopNLargestTransactions(userEntity, 2);
+            PriorityQueue<TransactionEntity> result = analyticsService.getTopNLargestTransactions(userEntity, 2);
 
-                long endTime = System.currentTimeMillis();
-                System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
+            long endTime = System.currentTimeMillis();
+            System.out.println(method.getName() + " finished, duration: " + (endTime - startTime) + " ms");
 
-                assertEquals(2, result.size());
+            assertEquals(2, result.size());
 
-                TransactionEntity first = result.poll();
-                TransactionEntity second = result.poll();
+            TransactionEntity first = result.poll();
+            TransactionEntity second = result.poll();
 
-                assertEquals(TWENTY_DOLLARS, first.getValue());
-                assertEquals(TWENTY_DOLLARS, second.getValue());
-            }
+            assertEquals(TWENTY_DOLLARS, first.getValue());
+            assertEquals(TWENTY_DOLLARS, second.getValue());
+
         } catch (NoSuchMethodException e) {
             fail("Метод не найден: " + e.getMessage());
         }
