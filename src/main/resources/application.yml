@@ -14,6 +14,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  web:
+    resources:
+      add-mappings: true
 
 springdoc:
   api-docs:
@@ -25,3 +28,9 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     filter: true
+
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG

@@ -1,6 +1,7 @@
 package integration;
 
 import gigabank.accountmanagement.GigaBankApplication;
+import gigabank.accountmanagement.dto.request.DepositWithdrawRequest;
 import gigabank.accountmanagement.model.BankAccountEntity;
 import gigabank.accountmanagement.model.UserEntity;
 import gigabank.accountmanagement.repository.BankAccountRepository;
@@ -25,9 +26,7 @@ public class BankAccountIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    public void BankAccountServiceIntegrationTest(BankAccountService bankAccountService,
-                                                  BankAccountRepository bankAccountRepository,
-                                                  UserRepository userRepository) {
+    public BankAccountIntegrationTest(BankAccountService bankAccountService, BankAccountRepository bankAccountRepository, UserRepository userRepository) {
         this.bankAccountService = bankAccountService;
         this.bankAccountRepository = bankAccountRepository;
         this.userRepository = userRepository;
@@ -48,6 +47,13 @@ public class BankAccountIntegrationTest {
         account.setOwner(user);
         account.setBlocked(false);
         return bankAccountRepository.save(account);
+    }
+
+    private DepositWithdrawRequest createTestTransferRequest(BigDecimal amount) {
+        DepositWithdrawRequest request = new DepositWithdrawRequest();
+        request.setAmount(amount);
+        request.setDescription("Transfer between accounts");
+        return request;
     }
 
     @Test
@@ -74,9 +80,11 @@ public class BankAccountIntegrationTest {
 
         BigDecimal transferAmount = new BigDecimal("300.00");
 
-        bankAccountService.withdraw(senderAccount.getId(), transferAmount);
+        DepositWithdrawRequest withdrawRequest = createTestTransferRequest(transferAmount);
+        DepositWithdrawRequest depositRequest = createTestTransferRequest(transferAmount);
 
-        bankAccountService.deposit(receiverAccount.getId(), transferAmount);
+        bankAccountService.withdraw(senderAccount.getId(), withdrawRequest);
+        bankAccountService.deposit(receiverAccount.getId(), depositRequest);
 
         BankAccountEntity updatedSender = bankAccountRepository.findById(senderAccount.getId()).orElseThrow();
         BankAccountEntity updatedReceiver = bankAccountRepository.findById(receiverAccount.getId()).orElseThrow();

@@ -1,133 +1,71 @@
 package gigabank.accountmanagement.service;
 
+import gigabank.accountmanagement.dto.response.TransactionResponse;
 import gigabank.accountmanagement.enums.TransactionType;
+import gigabank.accountmanagement.mapper.TransactionMapper;
 import gigabank.accountmanagement.model.TransactionEntity;
-import gigabank.accountmanagement.model.UserEntity;
 import gigabank.accountmanagement.repository.TransactionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * Сервис отвечает за управление платежами и переводами
  */
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class TransactionService {
-    //реализация данного Set - неизменяемый стрим, не допускающий передачу null значений
-    public static final Set<String> TRANSACTION_CATEGORIES = Set.of(
-            "Health", "Beauty", "Education");
-
     private final TransactionRepository transactionRepository;
+    private final TransactionMapper transactionMapper;
 
-    public TransactionService(TransactionRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
+    /**
+     * Получает все транзакции для указанного счета.
+     *
+     * @param accountId идентификатор счета
+     * @return список DTO транзакций для указанного счета
+     */
+    public List<TransactionResponse> getAccountTransactions(Long accountId) {
+        log.info("Получение транзакций для счета ID: {}", accountId);
+
+        List<TransactionEntity> transactionEntities = transactionRepository.findByAccountId(accountId);
+
+        List<TransactionResponse> response = transactionEntities.stream()
+                .map(transactionMapper::toResponse)
+                .collect(Collectors.toList());
+
+        log.info("Найдено {} транзакций для счета ID {}", response.size(), accountId);
+        return response;
     }
 
-    public Page<TransactionEntity> getFilteredTransactions(Long accountId, TransactionType type,
+    /**
+     * Получает отфильтрованный список транзакций с поддержкой пагинации.
+     *
+     * @param accountId идентификатор счета для фильтрации (опционально)
+     * @param type тип транзакции для фильтрации (опционально)
+     * @param category категория транзакции для фильтрации (опционально)
+     * @param startDate начальная дата для фильтрации по периоду (опционально)
+     * @param pageable параметры пагинации и сортировки
+     * @return страница с отфильтрованными транзакциями в формате DTO
+     */
+    public Page<TransactionResponse> getFilteredTransactions(Long accountId, TransactionType type,
                                                            String category, LocalDateTime startDate,
                                                            Pageable pageable) {
-
+        log.info("Попытка поиска транзакций по фильтру.");
         String accountIdStr = accountId != null ? accountId.toString() : null;
         String typeStr = type != null ? type.name() : null;
         String startDateStr = startDate != null ? startDate.toString() : null;
 
-        return transactionRepository.findWithFiltersNative(
-                accountIdStr,
-                typeStr,
-                category,
-                startDateStr,
-                pageable);
+        Page<TransactionEntity> transactionEntities = transactionRepository.findWithFiltersNative(
+                accountIdStr, typeStr, category, startDateStr, pageable);
+
+        log.info("Найдено {} транзакций", transactionEntities.getTotalElements());
+        return transactionEntities.map(transactionMapper::toResponse);
     }
-
-
-    public Boolean isValidCategory(String category) {
-        return category != null && TRANSACTION_CATEGORIES.contains(category);
-    }
-
-    public Set<String> validateCategories(Set<String> categories) {
-        Set<String> validCategories = new HashSet<>();
-
-        for (String category : categories) {
-            if (isValidCategory(category)) {
-                validCategories.add(category);
-            }
-        }
-        return validCategories;
-    }
-
-    /**
-     * Фильтрует транзакции пользователя с использованием Predicate.
-     *
-     * @param userEntity      - пользователь
-     * @param predicate - условие фильтрации
-     * @return список транзакций, удовлетворяющих условию
-     */
-    public List<TransactionEntity> filterTransactions(UserEntity userEntity, Predicate<TransactionEntity> predicate) {
-        if (userEntity == null) {
-            return Collections.emptyList();
-        }
-
-        return userEntity.getBankAccountEntities().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
-                .filter(predicate)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Преобразует транзакции пользователя с использованием Function.
-     *
-     * @param userEntity     - пользователь
-     * @param function - функция преобразования
-     * @return список строковых представлений транзакций
-     */
-    public List<String> transformTransactions(UserEntity userEntity, Function<TransactionEntity, String> function) {
-        if (userEntity == null) {
-            return Collections.emptyList();
-        }
-        return userEntity.getBankAccountEntities().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
-                .map(function)
-                .collect(Collectors.toList());
-
-    }
-
-    /**
-     * Обрабатывает транзакции пользователя с использованием Consumer.
-     *
-     * @param userEntity     - пользователь
-     * @param consumer - функция обработки
-     */
-    public void processTransactions(UserEntity userEntity, Consumer<TransactionEntity> consumer) {
-        if (userEntity == null) {
-            return;
-        }
-
-        userEntity.getBankAccountEntities().stream()
-                .flatMap(bankAccount -> bankAccount.getTransactionEntities().stream())
-                .forEach(consumer);
-    }
-
-    /**
-     * Создаёт список транзакций с использованием Supplier.
-     *
-     * @param supplier - поставщик
-     * @return созданный список транзакций
-     */
-    public List<TransactionEntity> createTransactionList(Supplier<List<TransactionEntity>> supplier) {
-        return supplier.get();
-    }
-
-
 }

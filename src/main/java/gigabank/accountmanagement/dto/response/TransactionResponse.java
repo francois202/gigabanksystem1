@@ -14,6 +14,8 @@ public class TransactionResponse {
     private TransactionType type;
     private String category;
     private LocalDateTime createdDate;
+    private Long accountId;
+    private String accountOwnerName;
 
     public TransactionResponse(TransactionEntity entity) {
         this.id = entity.getId();

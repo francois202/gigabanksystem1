@@ -3,11 +3,10 @@ package gigabank.accountmanagement.controller;
 import gigabank.accountmanagement.dto.request.DepositWithdrawRequest;
 import gigabank.accountmanagement.dto.response.BankAccountResponse;
 import gigabank.accountmanagement.dto.response.TransactionResponse;
-import gigabank.accountmanagement.model.BankAccountEntity;
 import gigabank.accountmanagement.service.BankAccountService;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import gigabank.accountmanagement.service.TransactionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,85 +14,116 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * Контроллер для управления счетами
+ */
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("/api/account-actions")
+@RequiredArgsConstructor
 public class BankAccountController {
     private final BankAccountService bankAccountService;
-    private static final Logger logger = LoggerFactory.getLogger(BankAccountController.class);
+    private final TransactionService transactionService;
 
-    public BankAccountController(BankAccountService bankAccountService) {
-        this.bankAccountService = bankAccountService;
-    }
-
+    /**
+     * Получает полную информацию о счете по его идентификатору.
+     *
+     * @param id уникальный идентификатор счета
+     * @return DTO с информацией о счете
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<BankAccountResponse> getAccount(@PathVariable Long id) {
-        BankAccountEntity account = bankAccountService.findAccountById(id);
-        BankAccountResponse response = new BankAccountResponse(account);
-        return ResponseEntity.ok(response);
+    @ResponseStatus(HttpStatus.OK)
+    public BankAccountResponse getAccount(@PathVariable Long id) {
+        return bankAccountService.getAccountById(id);
     }
 
+    /**
+     * Создает новый тестовый банковский счет.
+     *
+     * @return ResponseEntity с созданным DTO счета
+     */
     @PostMapping("/create")
     public ResponseEntity<BankAccountResponse> createAccount() {
-        BankAccountEntity accountCreated = BankAccountService.createTestAccount();
-        BankAccountResponse response = new BankAccountResponse(accountCreated);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(bankAccountService.createTestAccount());
     }
 
+    /**
+     * Пополняет баланс счета на указанную сумму.
+     *
+     * @param id уникальный идентификатор счета
+     * @param request DTO с данными для пополнения счета
+     * @return ResponseEntity с обновленным DTO счета
+     */
     @PostMapping("/{id}/deposit")
-    public ResponseEntity<Void> deposit(
+    public ResponseEntity<BankAccountResponse> deposit(
             @PathVariable Long id,
             @Valid @RequestBody DepositWithdrawRequest request) {
-
-        bankAccountService.deposit(id, request.getAmount());
-        return ResponseEntity.ok().build();
-
+        return ResponseEntity.ok(bankAccountService.deposit(id, request));
     }
 
+    /**
+     * Снимает указанную сумму со счета.
+     *
+     * @param id уникальный идентификатор счета
+     * @param request DTO с данными для снятия средств
+     * @return ResponseEntity с обновленным DTO счета
+     */
     @PostMapping("/{id}/withdraw")
-    public ResponseEntity<Void> withdraw(
+    public ResponseEntity<BankAccountResponse> withdraw(
             @PathVariable Long id,
             @Valid @RequestBody DepositWithdrawRequest request) {
-
-        bankAccountService.withdraw(id, request.getAmount());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(bankAccountService.withdraw(id, request));
     }
 
+    /**
+     * Получает список всех транзакций по указанному счету.
+     *
+     * @param id уникальный идентификатор счета
+     * @return ResponseEntity со списком DTO транзакций
+     */
     @GetMapping("/{id}/transactions")
     public ResponseEntity<List<TransactionResponse>> getTransactions(@PathVariable Long id) {
-        BankAccountEntity account = bankAccountService.findAccountById(id);
-        List<TransactionResponse> response = account.getTransactionEntities().stream()
-                .map(TransactionResponse::new)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(transactionService.getAccountTransactions(id));
     }
 
+    /**
+     * Получает страницу со всеми банковскими счетами с пагинацией.
+     *
+     * @param page номер страницы (по умолчанию 0)
+     * @param size размер страницы (по умолчанию 10)
+     * @return ResponseEntity со страницей DTO счетов
+     */
     @GetMapping
     public ResponseEntity<Page<BankAccountResponse>> getAllAccounts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<BankAccountEntity> accountsPage = bankAccountService.getAllAccounts(pageable);
-
-        Page<BankAccountResponse> responsePage = accountsPage.map(BankAccountResponse::new);
-        return ResponseEntity.ok(responsePage);
+        return ResponseEntity.ok(bankAccountService.getAllAccounts(pageable));
     }
 
+    /**
+     * Закрывает указанный банковский счет.
+     *
+     * @param id уникальный идентификатор счета
+     * @return ResponseEntity с пустым телом
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> closeAccount(@PathVariable Long id) {
         bankAccountService.closeAccount(id);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Блокирует или разблокирует указанный банковский счет.
+     *
+     * @param id уникальный идентификатор счета
+     * @return ResponseEntity с обновленным DTO счета
+     */
     @PostMapping("/{id}/block")
     public ResponseEntity<BankAccountResponse> toggleAccountBlock(@PathVariable Long id) {
-        BankAccountEntity account = bankAccountService.toggleAccountBlock(id);
-        BankAccountResponse response = new BankAccountResponse(account);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(bankAccountService.toggleAccountBlock(id));
     }
 }
