@@ -12,13 +12,13 @@ import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.model.UserEntity;
 import gigabank.accountmanagement.repository.BankAccountRepository;
 import gigabank.accountmanagement.repository.TransactionRepository;
-import gigabank.accountmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,10 +30,10 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BankAccountService {
     private final BankAccountRepository bankAccountRepository;
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
     private final BankAccountMapper bankAccountMapper;
 
     /**
@@ -91,6 +91,7 @@ public class BankAccountService {
      * @throws AccountNotFoundException если счет не найден
      * @throws ValidationException если баланс счета не равен нулю
      */
+    @Transactional
     public void closeAccount(Long accountId) {
         log.info("Попытка закрытия счета ID: {}", accountId);
         BankAccountEntity account = findAccountById(accountId);
@@ -110,6 +111,7 @@ public class BankAccountService {
      * @return DTO обновленной сущности банковского счета
      * @throws AccountNotFoundException если счет не найден
      */
+    @Transactional
     public BankAccountResponse toggleAccountBlock(Long accountId) {
         log.info("Переключение блокировки счета ID: {}", accountId);
         BankAccountEntity account = findAccountById(accountId);
@@ -128,6 +130,7 @@ public class BankAccountService {
      * @throws AccountNotFoundException если счет не найден
      * @throws OperationForbiddenException если счет заблокирован
      */
+    @Transactional
     public BankAccountResponse deposit(Long accountId, DepositWithdrawRequest request) {
         log.info("Пополнение счета ID: {} на сумму: {}", accountId, request.getAmount());
 
@@ -154,6 +157,7 @@ public class BankAccountService {
      * @throws OperationForbiddenException если счет заблокирован
      * @throws ValidationException если сумма снятия превышает баланс
      */
+    @Transactional
     public BankAccountResponse withdraw(Long accountId, DepositWithdrawRequest request) {
         log.info("Снятие со счета ID: {} суммы: {}", accountId, request.getAmount());
         BankAccountEntity account = findAccountById(accountId);
@@ -178,6 +182,7 @@ public class BankAccountService {
      *
      * @return DTO созданного тестового счета
      */
+    @Transactional
     public BankAccountResponse createTestAccount() {
         log.debug("Создание тестового счета");
         UserEntity testUserEntity = new UserEntity();
