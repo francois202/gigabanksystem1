@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/bank_service?currentSchema=bank_service
+    url: jdbc:postgresql://postgres-db:5432/bank_service
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -14,9 +14,48 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  kafka:
+    bootstrap-servers: kafka:9092
+    jackson:
+      deserialization:
+        fail-on-unknown-properties: false
+
+    consumer:
+      group-id: transaction-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: true
+        spring.json.value.default.type: gigabank.accountmanagement.dto.kafka.TransactionMessage
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+        max.poll.interval.ms: 300000
+        request.timeout.ms: 40000
+        fetch.max.wait.ms: 500
+        max.poll.records: 50
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+
   web:
     resources:
       add-mappings: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    time-zone: "UTC"
+
   security:
     oauth2:
       client:
@@ -27,6 +66,18 @@ spring:
           github:
             client-id: github-client-id
             client-secret: github-client-secret
+
+app:
+  kafka:
+    consumer-groups:
+      at-most-once: transaction-service-at-most-once
+      at-least-once: transaction-service-at-least-once
+      exactly-once: transaction-service-exactly-once
+      retry-dlt: transaction-service-retry-dlt
+      batch: transaction-service-batch
+    batch:
+      size: 20
+      timeout-ms: 500
 
 springdoc:
   api-docs:
@@ -45,3 +96,7 @@ logging:
       springframework:
         web: DEBUG
         security: DEBUG
+        kafka: DEBUG
+      apache:
+        kafka: DEBUG
+    gigabank.accountmanagement: DEBUG

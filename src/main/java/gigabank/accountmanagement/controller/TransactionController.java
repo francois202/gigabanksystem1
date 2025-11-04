@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.controller;
 
+import gigabank.accountmanagement.dto.request.TransactionGenerateRequest;
 import gigabank.accountmanagement.dto.response.TransactionResponse;
 import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.service.TransactionService;
@@ -9,12 +10,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Контроллер для управления операциями с транзакциями.
@@ -52,5 +52,20 @@ public class TransactionController {
                 accountId, type, category, startDate, pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/generate")
+    public ResponseEntity<Map<String, Object>> generateTransactions(
+            @RequestParam(defaultValue = "10") int count,
+            @RequestParam(defaultValue = "at-least-once") String mode
+    ) {
+            List<TransactionGenerateRequest> transactions = transactionService.generateTransactions(count, mode);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "generated", transactions.size(),
+                    "mode", mode,
+                    "transactions", transactions
+            ));
     }
 }
