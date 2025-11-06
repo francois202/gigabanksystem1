@@ -9,8 +9,36 @@ import org.springframework.kafka.config.TopicBuilder;
 public class KafkaTopicConfig {
 
     @Bean
-    public NewTopic transactionsTopic() {
-        return TopicBuilder.name("transactions")
+    public NewTopic transactionsAtMostOnceTopic() {
+        return TopicBuilder
+                .name("transactions-at-most-once")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic transactionsAtLeastOnceTopic() {
+        return TopicBuilder
+                .name("transactions-at-least-once")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic transactionsExactlyOnceTopic() {
+        return TopicBuilder
+                .name("transactions-exactly-once")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic transactionsBatchTopic() {
+        return TopicBuilder
+                .name("transactions-batch")
                 .partitions(3)
                 .replicas(1)
                 .build();
@@ -18,15 +46,8 @@ public class KafkaTopicConfig {
 
     @Bean
     public NewTopic transactionsDLTTopic() {
-        return TopicBuilder.name("transactions.DLT")
-                .partitions(1)
-                .replicas(1)
-                .build();
-    }
-
-    @Bean
-    public NewTopic transactionsRetryTopic() {
-        return TopicBuilder.name("transactions.retry")
+        return TopicBuilder
+                .name("transactions-retry-dlt")
                 .partitions(1)
                 .replicas(1)
                 .build();

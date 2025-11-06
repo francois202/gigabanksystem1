@@ -27,7 +27,7 @@ public class DeadLetterTopicProducer {
                     "transaction-service-retry-dlt"
             );
 
-            kafkaTemplate.send("transactions.DLT", dltMessage)
+            kafkaTemplate.send("transactions-retry-dlt", dltMessage)
                     .whenComplete((result, ex) -> {
                         if (ex == null) {
                             log.info("Сообщение отправлено в DLT: partition={}, offset={}",

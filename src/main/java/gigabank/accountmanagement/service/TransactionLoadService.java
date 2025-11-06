@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Сервис для генерации тестовой нагрузки транзакций.
+ * Используется для тестирования производительности системы
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -24,7 +28,11 @@ public class TransactionLoadService {
     private final BankAccountRepository bankAccountRepository;
 
     /**
-     * Генерация нагрузки для тестирования обработки транзакций
+     * Генерирует тестовую нагрузку из указанного количества транзакций
+     *
+     * @param totalTransactions общее количество транзакций для генерации
+     * @param deliveryMode режим доставки для отправки в Kafka
+     * @return строку с результатами генерации
      */
     @Transactional(readOnly = true)
     public String generateBatchLoad(int totalTransactions, String deliveryMode) {
@@ -61,7 +69,12 @@ public class TransactionLoadService {
     }
 
     /**
-     * Создание случайной транзакции для тестирования
+     * Создает случайную транзакцию для тестирования системы.
+     * Генерирует реалистичные данные: случайный счет, тип операции и сумму
+     *
+     * @param transactionId уникальный идентификатор транзакции
+     * @param availableAccountIds список доступных идентификаторов счетов из базы данных
+     * @return сообщение транзакции со случайными данными для отправки в Kafka
      */
     public TransactionMessage createRandomTransaction(Long transactionId, List<Long> availableAccountIds) {
         TransactionMessage message = new TransactionMessage();

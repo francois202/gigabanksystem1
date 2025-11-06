@@ -5,7 +5,6 @@ import gigabank.accountmanagement.kafka.producer.DeadLetterTopicProducer;
 import gigabank.accountmanagement.service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
@@ -15,18 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Slf4j
 public class TransactionKafkaConsumer {
-
-    @Value("${app.kafka.consumer-groups.at-most-once}")
-    private String atMostOnceGroupId;
-
-    @Value("${app.kafka.consumer-groups.at-least-once}")
-    private String atLeastOnceGroupId;
-
-    @Value("${app.kafka.consumer-groups.exactly-once}")
-    private String exactlyOnceGroupId;
-
-    @Value("${app.kafka.consumer-groups.retry-dlt}")
-    private String retryDltGroupId;
 
     private final TransactionService transactionService;
     private final DeadLetterTopicProducer deadLetterTopicProducer;
@@ -43,7 +30,7 @@ public class TransactionKafkaConsumer {
      * At-most-once консьюмер
      */
     @KafkaListener(
-            topics = "transactions",
+            topics = "transactions-at-most-once",
             groupId = "${app.kafka.consumer-groups.at-most-once}",
             containerFactory = "atMostOnceContainerFactory"
     )
@@ -61,7 +48,7 @@ public class TransactionKafkaConsumer {
      * At-least-once консьюмер
      */
     @KafkaListener(
-            topics = "transactions",
+            topics = "transactions-at-least-once",
             groupId = "${app.kafka.consumer-groups.at-least-once}",
             containerFactory = "atLeastOnceContainerFactory"
     )
@@ -84,7 +71,7 @@ public class TransactionKafkaConsumer {
      * Exactly-once консьюмер
      */
     @KafkaListener(
-            topics = "transactions",
+            topics = "transactions-exactly-once",
             groupId = "${app.kafka.consumer-groups.exactly-once}",
             containerFactory = "exactlyOnceContainerFactory"
     )
@@ -119,7 +106,7 @@ public class TransactionKafkaConsumer {
      * Retry + DLT консьюмер
      */
     @KafkaListener(
-            topics = "transactions",
+            topics = "transactions-retry-dlt",
             groupId = "${app.kafka.consumer-groups.retry-dlt}",
             containerFactory = "retryDltContainerFactory"
     )

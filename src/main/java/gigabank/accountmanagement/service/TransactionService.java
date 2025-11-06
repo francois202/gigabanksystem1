@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -44,15 +41,28 @@ public class TransactionService {
     private final TransactionKafkaProducer transactionKafkaProducer;
     private final Random random = new Random();
 
+    /**
+     * Обрабатывает одиночную транзакцию, полученную из Kafka,
+     * обновляет баланс счета и сохраняет транзакцию в БД
+     *
+     * @param transactionMessage сообщение транзакции из Kafka
+     * @param deliveryMode режим доставки (at-most-once, at-least-once, exactly-once)
+     * @throws IllegalArgumentException если ID транзакции или счета равны null,
+     *                                  счет не найден или заблокирован
+     */
     @Transactional
-    public boolean processTransaction(TransactionMessage transactionMessage, String deliveryMode) {
+    public void processTransaction(TransactionMessage transactionMessage, String deliveryMode) {
+        if (transactionMessage.getId() == null || transactionMessage.getBankAccountId() == null) {
+            throw new IllegalArgumentException("Транзакции имеют null ID");
+        }
+
         long startTime = System.currentTimeMillis();
         Long transactionId = transactionMessage.getId();
         Long accountId = transactionMessage.getBankAccountId();
 
         if ("exactly-once".equals(deliveryMode) && processedTransactions.containsKey(transactionId)) {
             log.info("Транзакция уже обработана: transactionId={}, accountId={}", transactionId, accountId);
-            return true;
+            return;
         }
 
         try {
@@ -80,7 +90,6 @@ public class TransactionService {
 
             log.info("[Single] Транзакция обработана: transactionId={}, duration={}ms",
                     transactionId, duration);
-            return true;
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -92,6 +101,15 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Генерирует указанное количество транзакций и отправляет их в Kafka.
+     * Сохраняет сгенерированные транзакции в БД после успешной отправки в Kafka
+     *
+     * @param count количество транзакций для генерации
+     * @param deliveryMode режим доставки для отправки в Kafka
+     * @return список сгенерированных запросов на создание транзакций
+     * @throws IllegalArgumentException если в базе данных нет счетов
+     */
     @Transactional
     public List<TransactionGenerateRequest> generateTransactions(int count, String deliveryMode) {
         List<TransactionGenerateRequest> transactions = new ArrayList<>();
@@ -115,17 +133,25 @@ public class TransactionService {
 
             TransactionEntity transactionEntity = transactionMapper.toEntity(transactionGenerateRequest);
             transactionEntity.setBankAccountEntity(randomAccount);
-            transactionRepository.save(transactionEntity);
 
             TransactionMessage message = transactionMapper.toMessage(transactionEntity);
 
             transactionKafkaProducer.sendWithDeliveryMode(message, transactionGenerateRequest.getAccountId().toString(), deliveryMode);
+
+            transactionRepository.save(transactionEntity);
         }
 
         log.info("Сгенерировано {} транзакций.", count);
         return transactions;
     }
 
+    /**
+     * Обрабатывает пакет транзакций, полученных из Kafka batch consumer'а
+     *
+     * @param transactions список сообщений транзакций из Kafka
+     * @param deliveryMode режим доставки
+     * @return true если обработана хотя бы одна транзакция из пакета, иначе false
+     */
     @Transactional
     public boolean processTransactionBatch(List<TransactionMessage> transactions, String deliveryMode) {
         long batchStartTime = System.currentTimeMillis();
@@ -174,6 +200,15 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Обрабатывает одиночную транзакцию в рамках пакетной обработки.
+     * Выполняет проверку существования счета и обновление баланса
+     *
+     * @param transaction сообщение транзакции из Kafka
+     * @param deliveryMode режим доставки
+     * @param accountsMap мапа предзагруженных счетов для оптимизации
+     * @return true если транзакция успешно обработана, false если пропущена
+     */
     private boolean processSingleTransactionInBatch(TransactionMessage transaction, String deliveryMode,
                                                     Map<Long, BankAccountEntity> accountsMap) {
         Long transactionId = transaction.getId();
@@ -222,6 +257,14 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Обновляет баланс счета на основе типа и суммы транзакции.
+     * Выполняет проверку достаточности средств для операций списания
+     *
+     * @param account сущность счета для обновления
+     * @param transaction сообщение транзакции с данными операции
+     * @throws IllegalArgumentException если недостаточно средств или неизвестный тип транзакции
+     */
     private void updateAccountBalance(BankAccountEntity account, TransactionMessage transaction) {
         BigDecimal amount = transaction.getValue();
         BigDecimal newBalance;

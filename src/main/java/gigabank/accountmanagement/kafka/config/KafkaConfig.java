@@ -94,7 +94,6 @@ public class KafkaConfig {
 
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "default-group");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 org.apache.kafka.common.serialization.StringDeserializer.class);

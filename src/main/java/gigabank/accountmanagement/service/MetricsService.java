@@ -7,12 +7,11 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Getter
 @Service
 public class MetricsService {
 
-    @Getter
     private final ProcessingMetrics singleProcessingMetrics = new ProcessingMetrics();
-    @Getter
     private final ProcessingMetrics batchProcessingMetrics = new ProcessingMetrics();
 
     private final ConcurrentHashMap<String, AtomicLong> processingTimes = new ConcurrentHashMap<>();
@@ -46,4 +45,5 @@ public class MetricsService {
         }
         return (currentAverage * count + newValue) / (count + 1);
     }
+
 }

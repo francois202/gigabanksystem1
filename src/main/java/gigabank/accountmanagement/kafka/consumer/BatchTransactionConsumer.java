@@ -20,7 +20,7 @@ public class BatchTransactionConsumer {
      * Батч консьюмер для пакетной обработки
      */
     @KafkaListener(
-            topics = "transactions",
+            topics = "transactions-batch",
             groupId = "${app.kafka.consumer-groups.batch}",
             containerFactory = "batchContainerFactory"
     )

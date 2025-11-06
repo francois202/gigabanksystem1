@@ -16,9 +16,6 @@ spring:
         format_sql: true
   kafka:
     bootstrap-servers: kafka:9092
-    jackson:
-      deserialization:
-        fail-on-unknown-properties: false
 
     consumer:
       group-id: transaction-service
@@ -28,14 +25,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        spring.json.use.type.headers: true
         spring.json.value.default.type: gigabank.accountmanagement.dto.kafka.TransactionMessage
-        session.timeout.ms: 30000
-        heartbeat.interval.ms: 10000
-        max.poll.interval.ms: 300000
-        request.timeout.ms: 40000
-        fetch.max.wait.ms: 500
-        max.poll.records: 50
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -94,9 +84,9 @@ logging:
   level:
     org:
       springframework:
-        web: DEBUG
-        security: DEBUG
-        kafka: DEBUG
+        web: INFO
+        security: INFO
+        kafka: WARN
       apache:
-        kafka: DEBUG
+        kafka: WARN
     gigabank.accountmanagement: DEBUG
