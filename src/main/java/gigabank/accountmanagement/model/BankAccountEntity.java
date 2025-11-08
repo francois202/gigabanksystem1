@@ -3,6 +3,7 @@ package gigabank.accountmanagement.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 @Table(name = "bank_account")
 @Data
 @NoArgsConstructor
+@ToString(exclude = {"owner", "transactionEntities"})
 public class BankAccountEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
