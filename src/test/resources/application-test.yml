@@ -16,7 +16,28 @@ spring:
     init:
       mode: always
 
+  kafka:
+    bootstrap-servers: localhost:9099
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    properties:
+      spring.kafka.enabled: false
+
+kafka:
+  listeners: none
+
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql.BasicBinder: trace
+    org:
+      springframework:
+        web: DEBUG
+        security: DEBUG
+        test: DEBUG
+      apache:
+        http: DEBUG
+    gigabank:
+      accountmanagement: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+    org.springframework.boot.test.web.client.TestRestTemplate: DEBUG
+    org.apache.http.wire: DEBUG

@@ -19,14 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = GigaBankApplication.class)
 @Transactional
-public class BankAccountIntegrationTest {
+public class BankAccountServiceIntegrationTest {
 
     private BankAccountService bankAccountService;
     private BankAccountRepository bankAccountRepository;
     private UserRepository userRepository;
 
     @Autowired
-    public BankAccountIntegrationTest(BankAccountService bankAccountService, BankAccountRepository bankAccountRepository, UserRepository userRepository) {
+    public BankAccountServiceIntegrationTest(BankAccountService bankAccountService, BankAccountRepository bankAccountRepository, UserRepository userRepository) {
         this.bankAccountService = bankAccountService;
         this.bankAccountRepository = bankAccountRepository;
         this.userRepository = userRepository;
