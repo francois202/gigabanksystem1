@@ -15,17 +15,18 @@ public interface TransactionMapper {
     TransactionResponse toResponse(TransactionEntity transaction);
 
     @Mapping(source = "bankAccountEntity.id", target = "bankAccountId")
-    TransactionMessage toMessage(TransactionEntity entity);
+    TransactionMessage toMessage(TransactionEntity transaction);
 
-    @Mapping(source = "bankAccountId", target = "bankAccountEntity.id")
     @Mapping(target = "bankAccountEntity", ignore = true)
     TransactionEntity toEntity(TransactionMessage message);
 
-    @Mapping(source = "accountId", target = "bankAccountEntity.id")
     @Mapping(target = "bankAccountEntity", ignore = true)
     @Mapping(target = "id", source = "transactionId")
     @Mapping(target = "type", source = "transactionType")
     @Mapping(target = "value", source = "amount")
     @Mapping(target = "createdDate", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "sourceAccount", ignore = true)
+    @Mapping(target = "targetAccount", ignore = true)
+    @Mapping(target = "category", ignore = true)
     TransactionEntity toEntity(TransactionGenerateRequest request);
 }
