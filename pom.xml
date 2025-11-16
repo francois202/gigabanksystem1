@@ -205,9 +205,9 @@
                     <targetPackage>gigabank.accountmanagement.model</targetPackage>
                     <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
 
-                    <includeGeneratedAnnotation>false</includeGeneratedAnnotation>
-                    <includeSetters>false</includeSetters>
-                    <includeGetters>false</includeGetters>
+                    <includeGeneratedAnnotation>true</includeGeneratedAnnotation>
+                    <includeSetters>true</includeSetters>
+                    <includeGetters>true</includeGetters>
                     <includeToString>false</includeToString>
                     <includeHashcodeAndEquals>false</includeHashcodeAndEquals>
                     <includeAdditionalProperties>false</includeAdditionalProperties>

@@ -17,11 +17,9 @@ public interface TransactionMapper {
     @Mapping(source = "bankAccountEntity.id", target = "bankAccountId")
     TransactionMessage toMessage(TransactionEntity transaction);
 
-    @Mapping(source = "bankAccountId", target = "bankAccountEntity.id")
     @Mapping(target = "bankAccountEntity", ignore = true)
     TransactionEntity toEntity(TransactionMessage message);
 
-    @Mapping(source = "accountId", target = "bankAccountEntity.id")
     @Mapping(target = "bankAccountEntity", ignore = true)
     @Mapping(target = "id", source = "transactionId")
     @Mapping(target = "type", source = "transactionType")
