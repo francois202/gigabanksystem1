@@ -52,4 +52,13 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic transactionsOutboxTopic() {
+        return TopicBuilder
+                .name("transaction-outbox-events")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

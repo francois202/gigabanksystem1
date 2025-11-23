@@ -53,6 +53,11 @@ public class KafkaConfig {
     }
 
     @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> outboxEventsContainerFactory() {
+        return createContainerFactory(false, ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+    }
+
+    @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> batchContainerFactory() {
         var factory = new ConcurrentKafkaListenerContainerFactory<String, Object>();
         Map<String, Object> props = getBaseConsumerProperties();

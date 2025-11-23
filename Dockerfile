@@ -3,7 +3,7 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 
 # 1. Копируем только pom.xml сначала
-COPY pom.xml .
+COPY src/pom.xml .
 
 # 2. Скачиваем зависимости (кешируется отдельно)
 RUN mvn dependency:go-offline -B

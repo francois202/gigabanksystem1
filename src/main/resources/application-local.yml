@@ -1,0 +1,22 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bank_service
+    username: postgres
+    password: postgres
+  kafka:
+    bootstrap-servers: localhost:29092
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    org:
+      apache:
+        kafka: WARN
+      springframework:
+        kafka: WARN
+    gigabank.accountmanagement: INFO

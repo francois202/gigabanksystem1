@@ -12,32 +12,19 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
+        hbm2ddl.auto: create-drop
   sql:
     init:
       mode: always
+      platform: h2
 
   kafka:
-    bootstrap-servers: localhost:9099
+    bootstrap-servers:
     consumer:
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-    properties:
-      spring.kafka.enabled: false
-
-kafka:
-  listeners: none
+      auto-startup: false
 
 logging:
   level:
-    org:
-      springframework:
-        web: DEBUG
-        security: DEBUG
-        test: DEBUG
-      apache:
-        http: DEBUG
-    gigabank:
-      accountmanagement: DEBUG
-    org.springframework.web.client.RestTemplate: DEBUG
-    org.springframework.boot.test.web.client.TestRestTemplate: DEBUG
-    org.apache.http.wire: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.tool.schema.internal: DEBUG
+    gigabank.accountmanagement: DEBUG
