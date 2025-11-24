@@ -4,8 +4,10 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
     networks:
-      - kafka-network
+      - app-network
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -14,14 +16,17 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     ports:
       - "9092:9092"
+      - "29092:29092"
     networks:
-      - kafka-network
+      - app-network
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -33,7 +38,7 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     networks:
-      - kafka-network
+      - app-network
 
   postgres-db:
     image: postgres:15-alpine
@@ -48,7 +53,6 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - kafka-network
       - app-network
 
   account-management-service:
@@ -58,26 +62,18 @@ services:
     container_name: giga-bank-account-service
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/bank_service
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "true"
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_PROFILES_ACTIVE: docker
     ports:
       - "8080:8080"
     depends_on:
       - postgres-db
       - kafka
     networks:
-      - kafka-network
       - app-network
 
 volumes:
   postgres_data:
 
 networks:
-  kafka-network:
-    driver: bridge
   app-network:
     driver: bridge

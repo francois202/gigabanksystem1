@@ -127,4 +127,24 @@ public class TransactionKafkaConsumer {
             log.warn("[Retry-DLT] Сообщение отправлено в DLT: transactionId={}", transaction.getId());
         }
     }
+
+    @KafkaListener(
+            topics = "transaction-outbox-events",
+            groupId = "${app.kafka.consumer-groups.outbox-events}",
+            containerFactory = "outboxEventsContainerFactory"
+    )
+    public void consumeOutboxEvents(ConsumerRecord<String, TransactionMessage> record,
+                                    Acknowledgment ack) {
+        TransactionMessage transaction = record.value();
+
+        try {
+            log.info("[Outbox events] Получена транзакция: transactionId={}", transaction.getId());
+            transactionService.processTransaction(transaction, "at-least-once");
+            ack.acknowledge();
+            log.info("[Outbox events] Транзакция обработана: transactionId={}", transaction.getId());
+        } catch (Exception e) {
+            log.error("[Outbox events] Ошибка обработки: transactionId={}", transaction.getId(), e);
+            throw e;
+        }
+    }
 }

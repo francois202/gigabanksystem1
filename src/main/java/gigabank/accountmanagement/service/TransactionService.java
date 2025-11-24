@@ -1,5 +1,6 @@
 package gigabank.accountmanagement.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gigabank.accountmanagement.dto.kafka.TransactionMessage;
 import gigabank.accountmanagement.dto.request.TransactionGenerateRequest;
 import gigabank.accountmanagement.dto.response.TransactionResponse;
@@ -7,8 +8,10 @@ import gigabank.accountmanagement.enums.TransactionType;
 import gigabank.accountmanagement.kafka.producer.TransactionKafkaProducer;
 import gigabank.accountmanagement.mapper.TransactionMapper;
 import gigabank.accountmanagement.model.BankAccountEntity;
+import gigabank.accountmanagement.model.OutboxMessage;
 import gigabank.accountmanagement.model.TransactionEntity;
 import gigabank.accountmanagement.repository.BankAccountRepository;
+import gigabank.accountmanagement.repository.OutboxMessageRepository;
 import gigabank.accountmanagement.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final BankAccountRepository bankAccountRepository;
+    private final OutboxMessageRepository outboxMessageRepository;
     private final TransactionMapper transactionMapper;
     private final MetricsService metricsService;
     private final ConcurrentHashMap<Long, Boolean> processedTransactions = new ConcurrentHashMap<>();
@@ -80,6 +84,14 @@ public class TransactionService {
             bankAccountRepository.save(account);
             transactionRepository.save(transactionEntity);
 
+            OutboxMessage event = new OutboxMessage();
+            event.setAggregateType("Transaction");
+            event.setAggregateId(transactionId.toString());
+            event.setEventType("MoneyTransferCompleted");
+            event.setPayload(createEventPayload(transactionEntity));
+
+            outboxMessageRepository.save(event);
+
             if ("exactly-once".equals(deliveryMode)) {
                 processedTransactions.put(transactionId, true);
             }
@@ -98,6 +110,33 @@ public class TransactionService {
             log.error("[Single] Ошибка обработки транзакции: transactionId={}, duration={}ms",
                     transactionId, duration, e);
             throw e;
+        }
+    }
+
+    public String createEventPayload(TransactionEntity transaction) {
+        try {
+
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("transactionId", transaction.getId());
+            payload.put("amount", transaction.getValue());
+            payload.put("currency", "RUB");
+            payload.put("transactionType", transaction.getType().name());
+            payload.put("timestamp", transaction.getCreatedDate().toString());
+
+            Map<String, Object> accounts = new HashMap<>();
+            accounts.put("sourceAccount", transaction.getSourceAccount());
+            accounts.put("targetAccount", transaction.getTargetAccount());
+            payload.put("accounts", accounts);
+
+            payload.put("status", "COMPLETED");
+
+            return objectMapper.writeValueAsString(payload);
+        }
+        catch (Exception e) {
+            return String.format("{\"transactionId\": %d, \"error\": \"payload_creation_failed\"}",
+                    transaction.getId());
         }
     }
 

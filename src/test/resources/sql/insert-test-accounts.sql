@@ -1,4 +1,5 @@
 DELETE FROM app_transaction;
+DELETE FROM outbox_messages;
 DELETE FROM bank_account;
 DELETE FROM app_user;
 
