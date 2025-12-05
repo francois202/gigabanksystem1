@@ -12,7 +12,7 @@
     <modules>
         <module>account-service</module>
         <module>client-service</module>
-        <module>src</module>
+        <module>main-application</module>
     </modules>
 
     <properties>
