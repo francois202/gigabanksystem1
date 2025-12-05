@@ -1,0 +1,109 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bank_service
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:29092
+    consumer:
+      group-id: transaction-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: gigabank.accountmanagement.dto.kafka.TransactionMessage
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+  web:
+    resources:
+      add-mappings: true
+  jackson:
+    default-property-inclusion: non_null
+    visibility:
+      field: any
+      getter: none
+      setter: none
+      creator: none
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    time-zone: "UTC"
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: google-client-id
+            client-secret: google-client-secret
+          github:
+            client-id: github-client-id
+            client-secret: github-client-secret
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      jedis:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+app:
+  kafka:
+    consumer-groups:
+      at-most-once: transaction-service-at-most-once
+      at-least-once: transaction-service-at-least-once
+      exactly-once: transaction-service-exactly-once
+      retry-dlt: transaction-service-retry-dlt
+      batch: transaction-service-batch
+      outbox-events: transaction-service-outbox-events
+    batch:
+      size: 20
+      timeout-ms: 500
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    disable-swagger-default-url: true
+    display-request-duration: true
+    filter: true
+
+logging:
+  level:
+    org:
+      org.springdoc: DEBUG
+      springframework:
+        data:
+          redis: INFO
+        web: INFO
+        cache: INFO
+        security: INFO
+        kafka: WARN
+      apache:
+        kafka: WARN
+    gigabank.accountmanagement: INFO
