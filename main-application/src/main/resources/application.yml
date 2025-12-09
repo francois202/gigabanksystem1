@@ -9,11 +9,13 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+    generate-ddl: true
   kafka:
     bootstrap-servers: localhost:29092
     consumer:
@@ -96,14 +98,12 @@ springdoc:
 logging:
   level:
     org:
-      org.springdoc: DEBUG
       springframework:
         data:
           redis: INFO
-        web: INFO
+        web: debug
         cache: INFO
-        security: INFO
         kafka: WARN
       apache:
         kafka: WARN
-    gigabank.accountmanagement: INFO
+    gigabank.accountmanagement: debug

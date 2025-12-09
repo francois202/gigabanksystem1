@@ -1,13 +1,16 @@
 package gigabank.accountmanagement.dto.response;
 
 import gigabank.accountmanagement.enums.TransactionType;
-import gigabank.accountmanagement.model.TransactionEntity;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransactionResponse {
     private Long id;
     private BigDecimal value;
@@ -16,12 +19,4 @@ public class TransactionResponse {
     private LocalDateTime createdDate;
     private Long accountId;
     private String accountOwnerName;
-
-    public TransactionResponse(TransactionEntity entity) {
-        this.id = entity.getId();
-        this.value = entity.getValue();
-        this.type = entity.getType();
-        this.category = entity.getCategory();
-        this.createdDate = entity.getCreatedDate();
-    }
 }

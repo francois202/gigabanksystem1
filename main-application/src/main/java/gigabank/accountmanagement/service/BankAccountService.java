@@ -15,7 +15,11 @@ import gigabank.accountmanagement.repository.TransactionRepository;
 import gigabank.accountmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +42,8 @@ public class BankAccountService {
     private final TransactionRepository transactionRepository;
     private final BankAccountMapper bankAccountMapper;
     private final UserRepository userRepository;
+    private final CacheManager cacheManager;
+
     /**
      * Получает все счета с пагинацией.
      *
@@ -57,7 +63,7 @@ public class BankAccountService {
     }
 
     /**
-     * Получает все счета определенного пользователя с пагинацией.
+     * Получает все счета определенного пользователя.
      *
      * @param userId ID пользователя
      * @return страница с банковскими счетами в формате DTO
@@ -94,7 +100,6 @@ public class BankAccountService {
      * @return DTO с информацией о счете
      * @throws AccountNotFoundException если счет не найден
      */
-    @Cacheable(value = "accountsCache", key = "#accountId")
     public BankAccountResponse getAccountById(Long accountId) {
         log.info("Попытка поиска счета по id: {}", accountId);
         BankAccountEntity account = bankAccountRepository.findById(accountId)
@@ -114,12 +119,14 @@ public class BankAccountService {
     public void closeAccount(Long accountId) {
         log.info("Попытка закрытия счета ID: {}", accountId);
         BankAccountEntity account = findAccountById(accountId);
+        Long userId = account.getOwner().getId();
 
         if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
             throw new ValidationException("Невозможно закрыть счет с ненулевым балансом");
         }
         transactionRepository.deleteByAccountId(accountId);
         bankAccountRepository.deleteById(accountId);
+        evictAccountCaches(accountId, userId);
         log.info("Счет ID {} успешно закрыт", accountId);
     }
 
@@ -134,8 +141,10 @@ public class BankAccountService {
     public BankAccountResponse toggleAccountBlock(Long accountId) {
         log.info("Переключение блокировки счета ID: {}", accountId);
         BankAccountEntity account = findAccountById(accountId);
+        Long userId = account.getOwner().getId();
 
         account.setBlocked(!account.isBlocked());
+        evictAccountCaches(accountId, userId);
 
         return bankAccountMapper.toResponse(bankAccountRepository.save(account));
     }
@@ -154,12 +163,15 @@ public class BankAccountService {
         log.info("Пополнение счета ID: {} на сумму: {}", accountId, request.getAmount());
 
         BankAccountEntity account = findAccountById(accountId);
+        Long userId = account.getOwner().getId();
         if (account.isBlocked()) {
             throw new OperationForbiddenException("Аккаунт заблокирован");
         }
 
         account.setBalance(account.getBalance().add(request.getAmount()));
         BankAccountResponse response = bankAccountMapper.toResponse(bankAccountRepository.save(account));
+
+        evictAccountCaches(accountId, userId);
 
         log.info("Счет ID {} пополнен. Новый баланс: {}",
                 accountId, account.getBalance());
@@ -180,6 +192,7 @@ public class BankAccountService {
     public BankAccountResponse withdraw(Long accountId, DepositWithdrawRequest request) {
         log.info("Снятие со счета ID: {} суммы: {}", accountId, request.getAmount());
         BankAccountEntity account = findAccountById(accountId);
+        Long userId = account.getOwner().getId();
         if (account.isBlocked()) {
             throw new OperationForbiddenException("Аккаунт заблокирован");
         }
@@ -190,6 +203,8 @@ public class BankAccountService {
         account.setBalance(account.getBalance().subtract(request.getAmount()));
 
         BankAccountResponse response = bankAccountMapper.toResponse(bankAccountRepository.save(account));
+
+        evictAccountCaches(accountId, userId);
 
         log.info("Со счета ID {} снято {}. Новый баланс: {}",
                 accountId, request.getAmount(), account.getBalance());
@@ -235,5 +250,18 @@ public class BankAccountService {
         BankAccountEntity savedAccount = bankAccountRepository.save(account);
 
         return bankAccountMapper.toResponse(savedAccount);
+    }
+
+    /**
+     * Вспомогательный метод для инвалидации кэша через идентификаторы аккаунта и пользователя
+     * @param accountId идентификатор аккаунта
+     * @param userId идентификатор пользователя
+     */
+    private void evictAccountCaches(Long accountId, Long userId) {
+        Cache cache = cacheManager.getCache("accountsCache");
+        if (cache != null) {
+            cache.evict("account_" + accountId);
+            cache.evict("user_" + userId);
+        }
     }
 }

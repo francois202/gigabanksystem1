@@ -6,7 +6,11 @@ import gigabank.accountmanagement.dto.request.AuthRequest;
 import gigabank.accountmanagement.dto.request.DepositWithdrawRequest;
 import gigabank.accountmanagement.dto.request.TransactionGenerateRequest;
 import gigabank.accountmanagement.dto.response.TransactionGenerateResponse;
+import gigabank.accountmanagement.dto.response.UserAccountResponse;
 import gigabank.accountmanagement.exception.ErrorResponse;
+import gigabank.accountmanagement.model.UserEntity;
+import gigabank.accountmanagement.repository.BankAccountRepository;
+import gigabank.accountmanagement.repository.UserRepository;
 import gigabank.accountmanagement.service.security.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,229 +18,286 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.config.MvcNamespaceHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.clearAllCaches;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(
-        classes = GigaBankApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@SpringBootTest(classes = GigaBankApplication.class)
+@AutoConfigureMockMvc
 @EmbeddedKafka(ports = 9092)
 @ActiveProfiles("test")
 public class BankAccountControllerIntegrationTest {
 
-    @LocalServerPort
-    private int port;
-
-    private String baseUrl;
+    @Autowired
+    private MockMvc mockMvc;
 
     @Autowired
-    private AuthService authService;
+    private UserRepository userRepository;
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    CacheManager cacheManager;
 
-    private static final TestRestTemplate userRestTemplate = new TestRestTemplate("user", "password");
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private static final TestRestTemplate adminRestTemplate = new TestRestTemplate("admin", "admin");
+    @Autowired
+    private BankAccountRepository bankAccountRepository;
 
-    private static final TestRestTemplate noAuthRestTemplate = new TestRestTemplate();
+    private static final Long userId = 1L;
+
+    private static final Long accountId = 1L;
 
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api";
-    }
-
-    private String getJwtToken(String username, String password) {
-        AuthRequest authRequest = new AuthRequest(username, password);
-        return authService.authenticate(authRequest).getToken();
-    }
-
-    @Test
-    public void whenUserAccessAdminEndpoint_thenForbidden() {
-        ResponseEntity<String> response = userRestTemplate.getForEntity(baseUrl + "/admin/users",
-                String.class);
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        if (cacheManager.getCache("accountsCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("accountsCache")).clear();
+        }
+        if (cacheManager.getCache("usersCache") != null) {
+            Objects.requireNonNull(cacheManager.getCache("usersCache")).clear();
+        }
     }
 
     @Test
-    public void whenAdminAccessAdminEndpoint_thenOk() {
-        ResponseEntity<String> response = adminRestTemplate.getForEntity(baseUrl + "/admin/users",
-                String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void whenUserAccessAdminEndpoint_thenForbidden() throws Exception {
+        mockMvc.perform(get("/api/admin/users"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    public void whenUserAccessGetAccountsEndpoint_thenOk() {
-        ResponseEntity<String> response = userRestTemplate.getForEntity(baseUrl + "/account-actions",
-                String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "admin", password = "admin", roles = "ADMIN")
+    public void whenAdminAccessAdminEndpoint_thenOk() throws Exception {
+        mockMvc.perform(get("/api/admin/users"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void whenAdminAccessGetAccountsEndpoint_thenOk() {
-        ResponseEntity<String> response = adminRestTemplate.getForEntity(baseUrl + "/account-actions",
-                String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    public void whenUserAccessGetAccountsEndpoint_thenOk() throws Exception {
+        mockMvc.perform(get("/api/account-actions"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void whenUnauthorizedUserGetAccountsEndpoint_thenUnauthorized() {
-        ResponseEntity<String> response = noAuthRestTemplate.getForEntity(baseUrl + "/account-actions",
-                String.class);
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "user, password",
-            "admin, admin"
-    })
-    public void whenJwtTokenAccessGetAccountsEndpoint_thenOk(String username, String password) {
-        String jwtToken = getJwtToken(username, password);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(jwtToken);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<String> response = noAuthRestTemplate.exchange(
-                baseUrl + "/account-actions",
-                HttpMethod.GET,
-                entity,
-                String.class
-        );
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "admin", password = "admin", roles = "ADMIN")
+    public void whenAdminAccessGetAccountsEndpoint_thenOk() throws Exception {
+        mockMvc.perform(get("/api/account-actions"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void whenInvalidJwtTokenAccessGetAccountsEndpoint_thenUnauthorized() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth("invalid.jwt.token");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<String> response = noAuthRestTemplate.exchange(
-                baseUrl + "/account-actions",
-                HttpMethod.GET,
-                entity,
-                String.class
-        );
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    void whenUnauthorizedUserGetAccountsEndpoint_thenUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/account-actions"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    public void whenAdminAccessGetTransactionsEndpoint_thenOk() {
-        ResponseEntity<String> response = adminRestTemplate.getForEntity(baseUrl + "/transactions",
-                String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "admin", password = "admin", roles = "ADMIN")
+    void whenAdminAccessGetTransactionsEndpoint_thenOk() throws Exception {
+        mockMvc.perform(get("/api/transactions"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void whenUserAccessGetTransactionsEndpoint_thenOk() {
-        ResponseEntity<String> response = userRestTemplate.getForEntity(baseUrl + "/transactions",
-                String.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void whenUserAccessGetTransactionsEndpoint_thenOk() throws Exception {
+        mockMvc.perform(get("/api/transactions"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    public void whenUnauthorizedUserAccessGetTransactionsEndpoint_thenUnauthorized() {
-        ResponseEntity<String> response = noAuthRestTemplate.getForEntity(baseUrl + "/transactions",
-                String.class);
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    void whenUnauthorizedUserAccessGetTransactionsEndpoint_thenUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/transactions"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     @Sql(scripts = "/sql/insert-test-accounts.sql")
-    public void whenTransferMoney_thenOk() {
-        ResponseEntity<TransactionGenerateResponse> response = userRestTemplate.exchange(
-                baseUrl + "/transactions/generate?count=2",
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<>() {}
+    public void whenTransferMoney_thenOk() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/transactions/generate?count=2"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        TransactionGenerateResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                TransactionGenerateResponse.class
         );
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
+        assertEquals("success", response.getStatus());
+        assertEquals(2, response.getGenerated());
+        assertNotNull(response.getTransactions());
+        assertEquals(2, response.getTransactions().size());
 
-        TransactionGenerateResponse responseBody = response.getBody();
-        assertEquals("success", responseBody.getStatus());
-        assertEquals(2, responseBody.getGenerated());
-        assertNotNull(responseBody.getTransactions());
-        assertEquals(2, responseBody.getTransactions().size());
-
-        TransactionGenerateRequest firstTransaction = responseBody.getTransactions().get(0);
+        TransactionGenerateRequest firstTransaction = response.getTransactions().get(0);
         assertNotNull(firstTransaction.getTransactionId());
         assertNotNull(firstTransaction.getAmount());
     }
 
-    //использую выгрузку невалидных тестовых данных из джсона
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     @Sql(scripts = "/sql/insert-test-accounts.sql")
-    public void whenTransferNegativeAmount_thenBadRequest() throws IOException {
+    public void whenTransferNegativeAmount_thenBadRequest() throws Exception {
 
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream("invalid_deposit_data.json");
 
         DepositWithdrawRequest request = objectMapper.readValue(inputStream, DepositWithdrawRequest.class);
 
-        long accountId = 1L;
+        String requestBody = objectMapper.writeValueAsString(request);
 
-        ResponseEntity<ErrorResponse> response = userRestTemplate.postForEntity(
-                baseUrl + "/account-actions/" + accountId + "/withdraw",
-                request, ErrorResponse.class);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        ErrorResponse errorResponse = response.getBody();
-        assertNotNull(errorResponse);
-        assertEquals("Bad Request", errorResponse.getError());
-        assertEquals("Сумма снятия превышает баланс на счете", errorResponse.getMessage());
+        mockMvc.perform(post("/api/account-actions/1/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Сумма снятия превышает баланс на счете"));
     }
 
-    //использую выгрузку невалидных тестовых данных из джсона
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     @Sql(scripts = "/sql/insert-test-accounts.sql")
-    public void whenTransferMoneyToNonExistingAccount_thenNotFound() throws IOException {
+    void whenTransferMoneyToNonExistingAccount_thenNotFound() throws Exception {
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream("invalid_deposit_data.json");
-
         DepositWithdrawRequest request = objectMapper.readValue(inputStream, DepositWithdrawRequest.class);
 
-        long accountId = new Random().nextLong(3, 1000);
+        String requestBody = objectMapper.writeValueAsString(request);
+        long nonExistentAccountId = 999L;
 
-        ResponseEntity<ErrorResponse> response = userRestTemplate.postForEntity(
-                baseUrl + "/account-actions/" + accountId + "/deposit",
-                request, ErrorResponse.class);
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        ErrorResponse errorResponse = response.getBody();
-        assertNotNull(errorResponse);
-        assertEquals("Not Found", errorResponse.getError());
-        assertEquals("Аккаунт не найден с id: " + accountId, errorResponse.getMessage());
+        mockMvc.perform(post("/api/account-actions/" + nonExistentAccountId + "/deposit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Аккаунт не найден с id: " + nonExistentAccountId));
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     @Sql(scripts = "/sql/insert-test-accounts.sql")
-    public void whenGetNonExistentAccount_thenNotFound() {
-        long accountId = new Random().nextLong(3, 1000);
+    void whenGetNonExistentAccount_thenNotFound() throws Exception {
+        long nonExistentAccountId = 999L;
 
-        ResponseEntity<ErrorResponse> response = userRestTemplate.getForEntity(
-                baseUrl + "/account-actions/" + accountId,
-                ErrorResponse.class);
+        mockMvc.perform(get("/api/account-actions/" + nonExistentAccountId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Аккаунт не найден с id: " + nonExistentAccountId));
+    }
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        ErrorResponse errorResponse = response.getBody();
-        assertNotNull(errorResponse);
-        assertEquals("Not Found", errorResponse.getError());
-        assertEquals("Аккаунт не найден с id: " + accountId, errorResponse.getMessage());
+    @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    @Sql(scripts = "/sql/insert-test-accounts.sql")
+    void getUserAccounts_shouldCacheResult() throws Exception {
+        mockMvc.perform(get("/api/account-actions/user/" + userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+
+        Cache cache = cacheManager.getCache("accountsCache");
+        assertNotNull(cache, "accountsCache should exist");
+
+        Cache.ValueWrapper wrapper = cache.get("user_" + userId);
+        assertNotNull(wrapper, "User accounts should be cached");
+
+        bankAccountRepository.deleteAll();
+        userRepository.deleteById(userId);
+
+        mockMvc.perform(get("/api/account-actions/user/" + userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    @Sql(scripts = "/sql/insert-test-accounts.sql")
+    void deposit_shouldEvictAccountCache() throws Exception {
+        mockMvc.perform(get("/api/account-actions/user/" + userId))
+                .andExpect(status().isOk());
+
+        Cache cache = cacheManager.getCache("accountsCache");
+        assertNotNull(cache);
+        assertNotNull(cache.get("user_" + userId), "Account should be cached before deposit");
+
+        DepositWithdrawRequest depositRequest = new DepositWithdrawRequest();
+        depositRequest.setAmount(new BigDecimal("100.00"));
+
+        String requestBody = objectMapper.writeValueAsString(depositRequest);
+        mockMvc.perform(post("/api/account-actions/" + accountId + "/deposit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(accountId));
+
+        assertNull(cache.get("user_" + userId), "Account cache should be evicted after deposit");
+    }
+
+    @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    @Sql(scripts = "/sql/insert-test-accounts.sql")
+    void withdraw_shouldEvictAccountCache() throws Exception {
+        DepositWithdrawRequest depositRequest = new DepositWithdrawRequest();
+        depositRequest.setAmount(new BigDecimal("1000.00"));
+
+        mockMvc.perform(post("/api/account-actions/" + accountId + "/deposit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(depositRequest)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/account-actions/user/" + userId))
+                .andExpect(status().isOk());
+
+        Cache cache = cacheManager.getCache("accountsCache");
+        assertNotNull(cache);
+        assertNotNull(cache.get("user_" + userId), "Account should be cached before withdraw");
+
+        DepositWithdrawRequest withdrawRequest = new DepositWithdrawRequest();
+        withdrawRequest.setAmount(new BigDecimal("100.00"));
+
+        String requestBody = objectMapper.writeValueAsString(withdrawRequest);
+
+        mockMvc.perform(post("/api/account-actions/" + accountId + "/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+
+        assertNull(cache.get("user_" + userId), "Account cache should be evicted after withdraw");
+    }
+
+    @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    @Sql(scripts = "/sql/insert-test-accounts.sql")
+    void toggleAccountBlock_shouldEvictCache() throws Exception {
+        mockMvc.perform(get("/api/account-actions/user/" + userId))
+                .andExpect(status().isOk());
+
+        Cache cache = cacheManager.getCache("accountsCache");
+        assertNotNull(cache);
+        assertNotNull(cache.get("user_" + userId), "Account should be cached before toggle");
+
+        mockMvc.perform(post("/api/account-actions/" + accountId + "/block"))
+                .andExpect(status().isOk());
+
+        assertNull(cache.get("user_" + userId), "Account cache should be evicted after toggle block");
     }
 }

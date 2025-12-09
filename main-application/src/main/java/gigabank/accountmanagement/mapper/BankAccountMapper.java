@@ -11,6 +11,7 @@ public interface BankAccountMapper {
     @Mapping(source = "owner.id", target = "ownerId")
     @Mapping(source = "owner.name", target = "ownerName")
     @Mapping(source = "owner.email", target = "ownerEmail")
+    @Mapping(source = "blocked", target = "blocked")
     @Mapping(target = "transactions", ignore = true)
     BankAccountResponse toResponse(BankAccountEntity entity);
 }

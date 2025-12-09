@@ -15,6 +15,10 @@ import gigabank.accountmanagement.repository.OutboxMessageRepository;
 import gigabank.accountmanagement.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,6 +45,7 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final MetricsService metricsService;
     private final ConcurrentHashMap<Long, Boolean> processedTransactions = new ConcurrentHashMap<>();
+    private final CacheManager cacheManager;
 
     private final TransactionKafkaProducer transactionKafkaProducer;
     private final Random random = new Random();
@@ -113,6 +118,8 @@ public class TransactionService {
             metricsService.getSingleProcessingMetrics().incrementSuccessfulTransactions();
             metricsService.recordSingleTransactionTime(duration);
 
+            evictTransactionCaches(accountId, transactionId);
+
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             metricsService.getSingleProcessingMetrics().incrementFailedTransactions();
@@ -159,6 +166,7 @@ public class TransactionService {
     public List<TransactionGenerateRequest> generateTransactions(int count, String deliveryMode) {
         List<TransactionGenerateRequest> transactions = new ArrayList<>();
 
+        Set<Long> affectedAccountIds = new HashSet<>();
         List<BankAccountEntity> existingAccounts = bankAccountRepository.findAll();
         if (existingAccounts.isEmpty()) {
             throw new IllegalArgumentException("В базе данных нет счетов");
@@ -166,8 +174,10 @@ public class TransactionService {
 
         for (int i = 0; i < count; i++) {
             BankAccountEntity randomAccount = existingAccounts.get(random.nextInt(existingAccounts.size()));
-            TransactionGenerateRequest transactionGenerateRequest = new TransactionGenerateRequest();
+            Long accountId = randomAccount.getId();
+            affectedAccountIds.add(accountId);
 
+            TransactionGenerateRequest transactionGenerateRequest = new TransactionGenerateRequest();
             transactionGenerateRequest.setTransactionId(random.nextLong(1000) + 100);
             transactionGenerateRequest.setAccountId(randomAccount.getId());
             transactionGenerateRequest.setTransactionType(random.nextBoolean() ? TransactionType.DEPOSIT : TransactionType.WITHDRAWAL);
@@ -183,7 +193,10 @@ public class TransactionService {
 
             transactionKafkaProducer.sendWithDeliveryMode(message, transactionGenerateRequest.getAccountId().toString(), deliveryMode);
 
-            transactionRepository.save(transactionEntity);
+            TransactionEntity savedTransaction = transactionRepository.save(transactionEntity);
+            Long transactionId = savedTransaction.getId();
+
+            evictTransactionCaches(accountId, transactionId);
         }
 
         log.info("Сгенерировано {} транзакций.", count);
@@ -334,6 +347,7 @@ public class TransactionService {
      * @param accountId идентификатор счета
      * @return список DTO транзакций для указанного счета
      */
+    @Cacheable(value = "transactionsCache", key = "'account_' + #accountId")
     public List<TransactionResponse> getAccountTransactions(Long accountId) {
         log.info("Получение транзакций для счета ID: {}", accountId);
 
@@ -370,5 +384,18 @@ public class TransactionService {
 
         log.info("Найдено {} транзакций", transactionEntities.getTotalElements());
         return transactionEntities.map(transactionMapper::toResponse);
+    }
+
+    /**
+     * Вспомогательный метод для инвалидации кэша через идентификаторы аккаунта и транзакций
+     * @param accountId идентификатор аккаунта
+     * @param transactionId идентификатор транзакции
+     */
+    private void evictTransactionCaches(Long accountId, Long transactionId) {
+        Cache cache = cacheManager.getCache("transactionsCache");
+        if (cache != null) {
+            cache.evict("account_" + accountId);
+            cache.evict("transaction_" + transactionId);
+        }
     }
 }

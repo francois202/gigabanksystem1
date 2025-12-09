@@ -33,7 +33,7 @@ public class BankAccountEntity {
     private UserEntity owner;
 
     @Column(name = "is_blocked", nullable = false)
-    private boolean isBlocked;
+    private boolean blocked;
 
     @OneToMany(mappedBy = "bankAccountEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionEntity> transactionEntities = new ArrayList<>();
