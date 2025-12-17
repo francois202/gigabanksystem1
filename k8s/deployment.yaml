@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: giga-bank-app
+  namespace: giga-bank
+  labels:
+    app: giga-bank
+    component: main-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: giga-bank
+      component: main-application
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: giga-bank
+        component: main-application
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: main-application
+          image: giga-bank-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "kubernetes"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://host.minikube.internal:5432/bank_service"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: giga-bank-secrets
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: giga-bank-secrets
+                  key: POSTGRES_PASSWORD
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "host.minikube.internal:29092"
+            - name: SPRING_DATA_REDIS_HOST
+              value: "host.minikube.internal"
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/startup
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config-volume
+          configMap:
+            name: giga-bank-config
+            items:
+              - key: application.yml
+                path: application.yml
